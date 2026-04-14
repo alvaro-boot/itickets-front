@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ITickets</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <!-- Servir esta carpeta por HTTP (p. ej. npx serve frontend) para que fetch al API y CORS funcionen. -->
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a href="#/tickets" class="brand"><span class="brand-dot"></span>ITickets</a>
+        <nav id="nav-actions" class="nav-actions" aria-label="Principal"></nav>
+      </header>
+      <div class="layout">
+        <aside id="sidebar" class="sidebar" hidden>
+          <h2>Modulo principal</h2>
+          <nav id="sidebar-menu" class="menu" aria-label="Secciones"></nav>
+        </aside>
+        <main class="content">
+          <section id="hero" class="hero" hidden>
+            <h1 id="hero-title">Panel</h1>
+            <p id="hero-subtitle">Gestion central de tickets y operaciones.</p>
+          </section>
+          <section id="view" tabindex="-1"></section>
+        </main>
+      </div>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>
