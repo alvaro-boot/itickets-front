@@ -9,6 +9,32 @@ const hero = document.getElementById('hero');
 const heroTitle = document.getElementById('hero-title');
 const heroSubtitle = document.getElementById('hero-subtitle');
 let sessionProfile = null;
+/** Token JWT para el cual `sessionProfile` es válido; evita llamar `/users/me` en cada cambio de ruta. */
+let sessionProfileForToken = null;
+
+function invalidateSessionProfile() {
+  sessionProfile = null;
+  sessionProfileForToken = null;
+}
+
+/** Catálogos de ticket (estado/prioridad/producto/tipo); se invalida al crear ítems en Catálogos. */
+let catalogBundleCache = null;
+
+async function fetchCatalogBundle() {
+  if (catalogBundleCache) return catalogBundleCache;
+  const [statuses, priorities, products, types] = await Promise.all([
+    api.catalogs.statuses(),
+    api.catalogs.priorities(),
+    api.catalogs.products(),
+    api.catalogs.types(),
+  ]);
+  catalogBundleCache = { statuses, priorities, products, types };
+  return catalogBundleCache;
+}
+
+function invalidateCatalogBundle() {
+  catalogBundleCache = null;
+}
 
 function escapeHtml(s) {
   if (s == null) return '';
@@ -94,6 +120,7 @@ function setNav(routeName, profile) {
   const btn = document.getElementById('btn-logout');
   btn?.addEventListener('click', () => {
     api.setToken(null);
+    invalidateSessionProfile();
     location.hash = '#/login';
   });
   const el = document.getElementById('nav-user');
@@ -150,6 +177,7 @@ async function renderLogin() {
         password,
       });
       api.setToken(res.access_token);
+      invalidateSessionProfile();
       feedback.textContent = 'Acceso concedido. Redirigiendo...';
       location.hash = '#/tickets';
     } catch (err) {
@@ -190,6 +218,7 @@ async function renderRegister() {
         password: fd.get('password'),
       });
       api.setToken(res.access_token);
+      invalidateSessionProfile();
       location.hash = '#/tickets';
     } catch (err) {
       showToast(err.message, true);
@@ -804,6 +833,7 @@ async function renderAdmin() {
           name: String(fd.get('name') || '').trim(),
           code: String(fd.get('code') || '').trim(),
         });
+        invalidateCatalogBundle();
         showToast('Empresa creada', false);
         await renderAdmin();
       } catch (err) {
@@ -914,6 +944,7 @@ async function renderCatalogs() {
           name,
           code: codeRaw || undefined,
         });
+        invalidateCatalogBundle();
         showToast('Producto registrado', false);
         await loadCatalogs(created.id, selectedTypeId);
       } catch (err) {
@@ -935,6 +966,7 @@ async function renderCatalogs() {
           name,
           code: codeRaw || undefined,
         });
+        invalidateCatalogBundle();
         showToast('Tipo registrado', false);
         await loadCatalogs(selectedProductId, created.id);
       } catch (err) {
@@ -958,12 +990,7 @@ async function renderTicketNew() {
   let products = [];
   let types = [];
   try {
-    [statuses, priorities, products, types] = await Promise.all([
-      api.catalogs.statuses(),
-      api.catalogs.priorities(),
-      api.catalogs.products(),
-      api.catalogs.types(),
-    ]);
+    ({ statuses, priorities, products, types } = await fetchCatalogBundle());
   } catch (err) {
     view.innerHTML = `<div class="panel"><p>No se pudieron cargar catálogos.</p></div>`;
     showToast(err.message, true);
@@ -1038,19 +1065,11 @@ async function renderTicketNew() {
 async function renderTicketDetail(id) {
   view.innerHTML = `<div class="panel"><p class="meta">Cargando ticket…</p></div>`;
   try {
-    const [ticket, statuses, priorities, products, types] = await Promise.all([
+    const [ticket, { statuses, priorities, products, types }, userList] = await Promise.all([
       api.tickets.get(id),
-      api.catalogs.statuses(),
-      api.catalogs.priorities(),
-      api.catalogs.products(),
-      api.catalogs.types(),
+      fetchCatalogBundle(),
+      api.users.list().catch(() => []),
     ]);
-    let userList = [];
-    try {
-      userList = await api.users.list();
-    } catch {
-      userList = [];
-    }
 
     view.innerHTML = `
       <div class="toolbar">
@@ -1289,16 +1308,20 @@ async function render() {
   const token = api.getToken();
   const isAuthRoute = route.name === 'login';
   if (token) {
-    try {
-      sessionProfile = await api.auth.me();
-    } catch {
-      sessionProfile = null;
-      api.setToken(null);
-      location.hash = '#/login';
-      return;
+    const needProfile = sessionProfileForToken !== token || !sessionProfile;
+    if (needProfile) {
+      try {
+        sessionProfile = await api.auth.me();
+        sessionProfileForToken = token;
+      } catch {
+        invalidateSessionProfile();
+        api.setToken(null);
+        location.hash = '#/login';
+        return;
+      }
     }
   } else {
-    sessionProfile = null;
+    invalidateSessionProfile();
   }
   document.body.classList.toggle('auth-mode', !token && isAuthRoute);
   setNav(route.name, sessionProfile);
@@ -1313,7 +1336,6 @@ async function render() {
     return;
   }
 
-  view.innerHTML = '';
   if (heroTitle && heroSubtitle) {
     const heroMap = {
       login: ['Acceso seguro', 'Inicia sesion para gestionar la operacion de soporte.'],
