@@ -138,6 +138,8 @@ export const tickets = {
     request('/tickets', { method: 'POST', body: JSON.stringify(body) }, { showLoader: true }),
   duplicate: (id, body) =>
     request(`/tickets/${id}/duplicate`, { method: 'POST', body: JSON.stringify(body) }, { showLoader: true }),
+  reassign: (id, body) =>
+    request(`/tickets/${id}/assignee`, { method: 'PATCH', body: JSON.stringify(body) }, { noCache: true }),
   update: (id, body) => request(`/tickets/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   comment: (id, body) => request(`/tickets/${id}/comments`, { method: 'POST', body: JSON.stringify(body) }),
   addWorklog: (id, body) => request(`/tickets/${id}/worklogs`, { method: 'POST', body: JSON.stringify(body) }),
