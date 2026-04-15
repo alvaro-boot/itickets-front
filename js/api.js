@@ -136,6 +136,8 @@ export const tickets = {
   get: (id) => request(`/tickets/${id}`),
   create: (body) =>
     request('/tickets', { method: 'POST', body: JSON.stringify(body) }, { showLoader: true }),
+  duplicate: (id, body) =>
+    request(`/tickets/${id}/duplicate`, { method: 'POST', body: JSON.stringify(body) }, { showLoader: true }),
   update: (id, body) => request(`/tickets/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   comment: (id, body) => request(`/tickets/${id}/comments`, { method: 'POST', body: JSON.stringify(body) }),
   addWorklog: (id, body) => request(`/tickets/${id}/worklogs`, { method: 'POST', body: JSON.stringify(body) }),

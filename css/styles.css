@@ -65,6 +65,18 @@ body.auth-mode .app-shell {
   box-shadow: var(--shadow);
 }
 
+.menu-toggle {
+  display: none;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #ffffff08;
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+  padding: 0.45rem 0.65rem;
+  cursor: pointer;
+}
+
 .nav-actions {
   display: flex;
   flex-wrap: wrap;
@@ -114,6 +126,18 @@ body.auth-mode .app-shell {
   border-radius: var(--radius);
   padding: 1rem;
   box-shadow: var(--shadow);
+}
+
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 18;
+  background: #060b14b8;
+  backdrop-filter: blur(2px);
+}
+
+.sidebar-backdrop[hidden] {
+  display: none;
 }
 
 .sidebar h2 {
@@ -477,6 +501,91 @@ tbody tr:hover td {
   }
   body.auth-mode .app-shell {
     padding: 1rem;
+  }
+}
+
+@media (max-width: 1023px) {
+  .app-shell {
+    padding: 0.9rem;
+  }
+
+  .topbar {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.8rem;
+  }
+
+  .menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .nav-actions {
+    justify-self: end;
+    gap: 0.4rem;
+  }
+
+  .nav-actions .btn {
+    padding: 0.4rem 0.7rem;
+    font-size: 0.86rem;
+  }
+
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: fixed;
+    left: 0.8rem;
+    top: 4.35rem;
+    width: min(86vw, 300px);
+    max-height: calc(100vh - 5.2rem);
+    overflow: auto;
+    z-index: 20;
+    transform: translateX(-110%);
+    transition: transform 180ms ease;
+  }
+
+  body.sidebar-open .sidebar {
+    transform: translateX(0);
+  }
+
+  .hero {
+    padding: 1rem;
+  }
+
+  .hero h1 {
+    font-size: 1.15rem;
+  }
+
+  .panel {
+    padding: 0.85rem;
+  }
+
+  .ticket-tabs {
+    overflow-x: auto;
+    padding-bottom: 0.2rem;
+    scrollbar-width: thin;
+  }
+
+  .ticket-tab {
+    white-space: nowrap;
+  }
+
+  .chart-row {
+    grid-template-columns: 1fr;
+    gap: 0.3rem;
+  }
+
+  .chart-value {
+    text-align: left;
+  }
+
+  .table-wrap {
+    -webkit-overflow-scrolling: touch;
   }
 }
 

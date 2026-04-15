@@ -5,6 +5,8 @@ const nav = document.getElementById('nav-actions');
 const toastEl = document.getElementById('toast');
 const sidebar = document.getElementById('sidebar');
 const sidebarMenu = document.getElementById('sidebar-menu');
+const menuToggle = document.getElementById('menu-toggle');
+const sidebarBackdrop = document.getElementById('sidebar-backdrop');
 const hero = document.getElementById('hero');
 const heroTitle = document.getElementById('hero-title');
 const heroSubtitle = document.getElementById('hero-subtitle');
@@ -115,6 +117,17 @@ function bindGlobalLoaderEvents() {
   });
 }
 
+function setSidebarOpen(open) {
+  document.body.classList.toggle('sidebar-open', open);
+  if (sidebarBackdrop) sidebarBackdrop.hidden = !open;
+}
+
+function closeSidebarForMobile() {
+  if (window.innerWidth <= 1023) {
+    setSidebarOpen(false);
+  }
+}
+
 function parseRoute() {
   const raw = location.hash.replace(/^#/, '') || '/';
   const parts = raw.split('/').filter(Boolean);
@@ -135,6 +148,7 @@ function setSidebar(routeName, hasToken, profile) {
   if (!hasToken) {
     sidebar.hidden = true;
     hero.hidden = true;
+    setSidebarOpen(false);
     return;
   }
   const items = [
@@ -167,6 +181,7 @@ function setSidebar(routeName, hasToken, profile) {
     .join('');
   sidebar.hidden = false;
   hero.hidden = false;
+  closeSidebarForMobile();
 }
 
 function setNav(routeName, profile) {
@@ -1304,6 +1319,7 @@ async function renderTicketDetail(id) {
           </div>
           <div style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
             <button class="btn btn-primary" type="submit">Guardar cambios</button>
+            <button class="btn btn-ghost" id="btn-duplicate-ticket" type="button">Duplicar y asignar</button>
           </div>
         </form>
         <p class="meta" style="margin-top:1rem">
@@ -1407,6 +1423,21 @@ async function renderTicketDetail(id) {
         await api.tickets.update(id, payload);
         showToast('Cambios guardados', false);
         await renderTicketDetail(id);
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    });
+
+    document.getElementById('btn-duplicate-ticket')?.addEventListener('click', async () => {
+      const assigneeRaw = document.getElementById('assigneeId')?.value;
+      if (!assigneeRaw) {
+        showToast('Selecciona un usuario para duplicar y asignar.', true);
+        return;
+      }
+      try {
+        const duplicated = await api.tickets.duplicate(id, { assigneeId: String(assigneeRaw) });
+        showToast(`Ticket duplicado: #${duplicated.id}`, false);
+        location.hash = `#/tickets/${duplicated.id}`;
       } catch (err) {
         showToast(err.message, true);
       }
@@ -1531,6 +1562,17 @@ async function render() {
 function boot() {
   ensureGlobalLoader();
   bindGlobalLoaderEvents();
+  menuToggle?.addEventListener('click', () => {
+    const willOpen = !document.body.classList.contains('sidebar-open');
+    setSidebarOpen(willOpen);
+  });
+  sidebarBackdrop?.addEventListener('click', () => setSidebarOpen(false));
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 1023) {
+      setSidebarOpen(false);
+      if (sidebarBackdrop) sidebarBackdrop.hidden = true;
+    }
+  });
   window.addEventListener('hashchange', () => render());
   render();
 }
