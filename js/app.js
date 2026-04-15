@@ -1253,6 +1253,17 @@ async function renderTicketDetail(id) {
       fetchCatalogBundle(),
       fetchUsersListCached(),
     ]);
+    const assignmentUsersMap = new Map((userList || []).map((u) => [String(u.id), u]));
+    if (ticket.assigneeId && !assignmentUsersMap.has(String(ticket.assigneeId))) {
+      assignmentUsersMap.set(String(ticket.assigneeId), {
+        id: ticket.assigneeId,
+        fullName: ticket.assignee?.fullName || 'Usuario asignado',
+        email: ticket.assignee?.email || '',
+      });
+    }
+    const assignmentUsers = Array.from(assignmentUsersMap.values()).sort((a, b) =>
+      String(a.fullName || '').localeCompare(String(b.fullName || ''), 'es'),
+    );
 
     view.innerHTML = `
       <div class="toolbar">
@@ -1318,7 +1329,7 @@ async function renderTicketDetail(id) {
               <label for="assigneeId">Asignado a</label>
               <select id="assigneeId" name="assigneeId">
                 <option value="">— Sin asignar —</option>
-                ${userList
+                ${assignmentUsers
                   .map(
                     (u) =>
                       `<option value="${escapeHtml(u.id)}" ${String(u.id) === String(ticket.assigneeId || '') ? 'selected' : ''}>${escapeHtml(u.fullName)} (${escapeHtml(u.email)})</option>`,
@@ -1326,7 +1337,7 @@ async function renderTicketDetail(id) {
                   .join('')}
               </select>
               ${
-                userList.length === 0
+                assignmentUsers.length === 0
                   ? '<p class="meta" style="margin:.4rem 0 0">No tienes permiso para reasignar usuarios.</p>'
                   : ''
               }
@@ -1334,7 +1345,6 @@ async function renderTicketDetail(id) {
           </div>
           <div style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
             <button class="btn btn-primary" type="submit">Guardar cambios</button>
-            <button class="btn btn-ghost" id="btn-reassign-ticket" type="button">Reasignar sin duplicar</button>
             <button class="btn btn-ghost" id="btn-duplicate-ticket" type="button">Duplicar y asignar</button>
           </div>
         </form>
@@ -1423,6 +1433,8 @@ async function renderTicketDetail(id) {
     document.getElementById('f-ticket').addEventListener('submit', async (e) => {
       e.preventDefault();
       const fd = new FormData(e.target);
+      const assigneeRaw = fd.get('assigneeId');
+      const assigneeId = assigneeRaw === '' || assigneeRaw == null ? null : String(assigneeRaw);
       const payload = {
         title: fd.get('title'),
         description: fd.get('description'),
@@ -1432,21 +1444,19 @@ async function renderTicketDetail(id) {
         ticketTypeId: fd.get('ticketTypeId'),
       };
       try {
+        await api.tickets.reassign(id, { assigneeId });
+        const ticketAfterReassign = await api.tickets.get(id);
+        const assigneeAfterReassign =
+          ticketAfterReassign?.assigneeId == null ? null : String(ticketAfterReassign.assigneeId);
+        if ((assigneeAfterReassign || null) !== (assigneeId || null)) {
+          throw new Error('No fue posible persistir la reasignación en base de datos');
+        }
         await api.tickets.update(id, payload);
-        showToast('Cambios del ticket guardados', false);
-        await renderTicketDetail(id);
-      } catch (err) {
-        showToast(err.message, true);
-      }
-    });
-
-    document.getElementById('btn-reassign-ticket')?.addEventListener('click', async () => {
-      const assigneeRaw = document.getElementById('assigneeId')?.value;
-      const assigneeId = assigneeRaw === '' || assigneeRaw == null ? null : String(assigneeRaw);
-      try {
-        const updated = await api.tickets.reassign(id, { assigneeId });
-        const assigneeLabel = updated?.assignee?.fullName || updated?.assignee?.email || 'Sin asignar';
-        showToast(`Ticket reasignado a: ${assigneeLabel}`, false);
+        const assigneeLabel =
+          userList.find((u) => String(u.id) === String(assigneeId))?.fullName ||
+          userList.find((u) => String(u.id) === String(assigneeId))?.email ||
+          'Sin asignar';
+        showToast(`Cambios guardados. Asignado a: ${assigneeLabel}`, false);
         await renderTicketDetail(id);
       } catch (err) {
         showToast(err.message, true);
