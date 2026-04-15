@@ -1415,13 +1415,15 @@ async function renderTicketDetail(id) {
         priorityId: fd.get('priorityId'),
         productId: fd.get('productId'),
         ticketTypeId: fd.get('ticketTypeId'),
+        assigneeId: assigneeRaw === '' || assigneeRaw == null ? null : String(assigneeRaw),
       };
-      if (userList.length > 0) {
-        payload.assigneeId = assigneeRaw === '' || assigneeRaw == null ? null : String(assigneeRaw);
-      }
       try {
         await api.tickets.update(id, payload);
-        showToast('Cambios guardados', false);
+        const assigneeLabel =
+          userList.find((u) => String(u.id) === String(payload.assigneeId))?.fullName ||
+          userList.find((u) => String(u.id) === String(payload.assigneeId))?.email ||
+          'Sin asignar';
+        showToast(`Cambios guardados. Asignado a: ${assigneeLabel}`, false);
         await renderTicketDetail(id);
       } catch (err) {
         showToast(err.message, true);
