@@ -1,5 +1,9 @@
 import { API_BASE, TOKEN_KEY } from './config.js';
 
+const GET_CACHE_TTL_MS = 15000;
+const getCache = new Map();
+const inflightGet = new Map();
+
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY);
 }
@@ -17,33 +21,86 @@ function parseErrorMessage(payload, status) {
   return `Error ${status}`;
 }
 
-export async function request(path, options = {}) {
+function notifyLoading(isLoading) {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(
+    new CustomEvent('itickets:loading', {
+      detail: { isLoading },
+    }),
+  );
+}
+
+function buildCacheKey(path, options, token) {
+  const method = String(options.method || 'GET').toUpperCase();
+  const body = typeof options.body === 'string' ? options.body : '';
+  return `${method}::${path}::${token || ''}::${body}`;
+}
+
+function clearRequestCaches() {
+  getCache.clear();
+  inflightGet.clear();
+}
+
+export async function request(path, options = {}, extras = {}) {
+  const method = String(options.method || 'GET').toUpperCase();
+  const shouldShowCreateLoader = Boolean(extras.showLoader);
+  const token = getToken();
+  const shouldUseGetCache = method === 'GET' && !extras.noCache;
+  const cacheKey = buildCacheKey(path, options, token);
+  if (shouldUseGetCache) {
+    const cached = getCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < GET_CACHE_TTL_MS) {
+      return cached.data;
+    }
+    if (inflightGet.has(cacheKey)) {
+      return inflightGet.get(cacheKey);
+    }
+  } else if (method !== 'GET') {
+    clearRequestCaches();
+  }
+
   const headers = {
     'Content-Type': 'application/json',
     ...(options.headers || {}),
   };
-  const t = getToken();
-  if (t) headers.Authorization = `Bearer ${t}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers,
-  });
+  if (shouldShowCreateLoader) notifyLoading(true);
+  const requestPromise = (async () => {
+    const res = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers,
+    });
 
-  const text = await res.text();
-  let data = null;
-  if (text) {
-    try {
-      data = JSON.parse(text);
-    } catch {
-      data = { message: text };
+    const text = await res.text();
+    let data = null;
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { message: text };
+      }
     }
-  }
 
-  if (!res.ok) {
-    throw new Error(parseErrorMessage(data, res.status));
+    if (!res.ok) {
+      throw new Error(parseErrorMessage(data, res.status));
+    }
+    if (shouldUseGetCache) {
+      getCache.set(cacheKey, {
+        timestamp: Date.now(),
+        data,
+      });
+    }
+    return data;
+  })();
+
+  if (shouldUseGetCache) inflightGet.set(cacheKey, requestPromise);
+  try {
+    return await requestPromise;
+  } finally {
+    if (shouldUseGetCache) inflightGet.delete(cacheKey);
+    if (shouldShowCreateLoader) notifyLoading(false);
   }
-  return data;
 }
 
 export const auth = {
@@ -69,14 +126,19 @@ export const users = {
 };
 
 export const tickets = {
-  list: () => request('/tickets'),
+  list: ({ q, page = 1, limit = 25 } = {}) => {
+    const params = new URLSearchParams();
+    if (q && String(q).trim()) params.set('q', String(q).trim());
+    params.set('page', String(page));
+    params.set('limit', String(limit));
+    return request(`/tickets?${params.toString()}`);
+  },
   get: (id) => request(`/tickets/${id}`),
-  create: (body) => request('/tickets', { method: 'POST', body: JSON.stringify(body) }),
+  create: (body) =>
+    request('/tickets', { method: 'POST', body: JSON.stringify(body) }, { showLoader: true }),
   update: (id, body) => request(`/tickets/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-  comment: (id, body) =>
-    request(`/tickets/${id}/comments`, { method: 'POST', body: JSON.stringify(body) }),
-  addWorklog: (id, body) =>
-    request(`/tickets/${id}/worklogs`, { method: 'POST', body: JSON.stringify(body) }),
+  comment: (id, body) => request(`/tickets/${id}/comments`, { method: 'POST', body: JSON.stringify(body) }),
+  addWorklog: (id, body) => request(`/tickets/${id}/worklogs`, { method: 'POST', body: JSON.stringify(body) }),
 };
 
 export const reports = {
@@ -87,13 +149,14 @@ export const reports = {
 
 export const incidents = {
   list: () => request('/incidents'),
-  create: (body) => request('/incidents', { method: 'POST', body: JSON.stringify(body) }),
+  create: (body) =>
+    request('/incidents', { method: 'POST', body: JSON.stringify(body) }, { showLoader: true }),
   update: (id, body) => request(`/incidents/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 };
 
 export const tasks = {
   mine: () => request('/tasks/mine'),
-  create: (body) => request('/tasks', { method: 'POST', body: JSON.stringify(body) }),
+  create: (body) => request('/tasks', { method: 'POST', body: JSON.stringify(body) }, { showLoader: true }),
   update: (id, body) => request(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 };
 

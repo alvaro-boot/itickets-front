@@ -247,6 +247,31 @@ body.auth-mode .content {
   margin-bottom: 0.8rem;
 }
 
+.ticket-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+
+.ticket-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #ffffff08;
+  color: var(--text);
+  padding: 0.45rem 0.8rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.ticket-tab.active {
+  border-color: #6f95ff8c;
+  background: linear-gradient(120deg, #5b8cff30, #7e6bff26);
+}
+
 .grid-2 {
   display: grid;
   gap: 0.8rem;
@@ -471,6 +496,55 @@ tbody tr:hover td {
 .toast.error {
   border-color: #ff6b7a80;
   color: #ffc6cd;
+}
+
+.global-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  background: #060b14b5;
+  backdrop-filter: blur(4px);
+}
+
+.global-loader[hidden] {
+  display: none;
+}
+
+.global-loader__box {
+  min-width: 300px;
+  max-width: 90vw;
+  display: grid;
+  justify-items: center;
+  gap: 0.8rem;
+  padding: 1rem 1.2rem;
+  border-radius: 14px;
+  border: 1px solid #4f6cff66;
+  background: linear-gradient(145deg, #192741, #111c2d);
+  box-shadow: var(--shadow);
+}
+
+.global-loader__spinner {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 3px solid #6f95ff3b;
+  border-top-color: #8fa8ff;
+  animation: spin 0.9s linear infinite;
+}
+
+.global-loader__text {
+  margin: 0;
+  color: #dbe6ff;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .chart-bars {

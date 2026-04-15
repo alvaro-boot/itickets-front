@@ -8,6 +8,8 @@ const sidebarMenu = document.getElementById('sidebar-menu');
 const hero = document.getElementById('hero');
 const heroTitle = document.getElementById('hero-title');
 const heroSubtitle = document.getElementById('hero-subtitle');
+let globalLoaderEl = null;
+let globalLoadingCount = 0;
 let sessionProfile = null;
 /** Token JWT para el cual `sessionProfile` es válido; evita llamar `/users/me` en cada cambio de ruta. */
 let sessionProfileForToken = null;
@@ -19,6 +21,17 @@ function invalidateSessionProfile() {
 
 /** Catálogos de ticket (estado/prioridad/producto/tipo); se invalida al crear ítems en Catálogos. */
 let catalogBundleCache = null;
+let usersListCache = null;
+let usersListCacheAt = 0;
+const USERS_LIST_TTL_MS = 30000;
+
+function debounce(fn, delayMs = 300) {
+  let timeout = null;
+  return (...args) => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => fn(...args), delayMs);
+  };
+}
 
 async function fetchCatalogBundle() {
   if (catalogBundleCache) return catalogBundleCache;
@@ -36,6 +49,21 @@ function invalidateCatalogBundle() {
   catalogBundleCache = null;
 }
 
+function invalidateUsersListCache() {
+  usersListCache = null;
+  usersListCacheAt = 0;
+}
+
+async function fetchUsersListCached() {
+  if (usersListCache && Date.now() - usersListCacheAt < USERS_LIST_TTL_MS) {
+    return usersListCache;
+  }
+  const rows = await api.users.list().catch(() => []);
+  usersListCache = rows;
+  usersListCacheAt = Date.now();
+  return rows;
+}
+
 function escapeHtml(s) {
   if (s == null) return '';
   const d = document.createElement('div');
@@ -51,6 +79,40 @@ function showToast(message, isError = true) {
   showToast._t = setTimeout(() => {
     toastEl.hidden = true;
   }, 4200);
+}
+
+function ensureGlobalLoader() {
+  if (globalLoaderEl) return globalLoaderEl;
+  const el = document.createElement('div');
+  el.id = 'global-loader';
+  el.className = 'global-loader';
+  el.hidden = true;
+  el.innerHTML = `
+    <div class="global-loader__box">
+      <span class="global-loader__spinner" aria-hidden="true"></span>
+      <p class="global-loader__text">Cargando informacion, por favor espera...</p>
+    </div>
+  `;
+  document.body.appendChild(el);
+  globalLoaderEl = el;
+  return el;
+}
+
+function updateGlobalLoader() {
+  const el = ensureGlobalLoader();
+  const show = globalLoadingCount > 0;
+  el.hidden = !show;
+}
+
+function bindGlobalLoaderEvents() {
+  window.addEventListener('itickets:loading', (event) => {
+    if (event.detail?.isLoading) {
+      globalLoadingCount += 1;
+    } else {
+      globalLoadingCount = Math.max(0, globalLoadingCount - 1);
+    }
+    updateGlobalLoader();
+  });
 }
 
 function parseRoute() {
@@ -234,7 +296,47 @@ function priorityClass(level) {
 async function renderTicketList() {
   view.innerHTML = `<div class="panel"><p class="meta">Cargando…</p></div>`;
   try {
-    const rows = await api.tickets.list();
+    let query = '';
+    const meId = sessionProfile?.id ? String(sessionProfile.id) : null;
+    const fetchRows = async (q = '') => {
+      const payload = await api.tickets.list({ q, page: 1, limit: 50 });
+      return payload?.items || [];
+    };
+    let rows = await fetchRows();
+    const isClosedTicket = (ticket) => {
+      const statusName = String(ticket.status?.name || '').toLowerCase();
+      const statusCode = String(ticket.status?.code || '').toLowerCase();
+      return Boolean(ticket.closedAt) || statusName.includes('cerrad') || statusCode.includes('closed');
+    };
+    const buildFilters = (source) => ({
+      all: source,
+      mine: source.filter((t) => meId && String(t.assigneeId || '') === meId),
+      unassigned: source.filter((t) => t.assigneeId == null || String(t.assigneeId) === ''),
+      closed: source.filter((t) => isClosedTicket(t)),
+    });
+    let filters = buildFilters(rows);
+    const tabDefs = [
+      { key: 'all', label: 'Tickets en general' },
+      { key: 'mine', label: 'Mis asignados' },
+      { key: 'unassigned', label: 'No asignados' },
+      { key: 'closed', label: 'Cerrados' },
+    ];
+
+    function renderRows(subset) {
+      return subset
+        .map(
+          (t) => `
+            <tr data-href="#/tickets/${t.id}" style="cursor:pointer">
+              <td><a href="#/tickets/${t.id}">${escapeHtml(t.title)}</a></td>
+              <td><span class="badge">${escapeHtml(t.status?.name || '')}</span></td>
+              <td><span class="${priorityClass(t.priority?.level)}">${escapeHtml(t.priority?.name || '')}</span></td>
+              <td>${escapeHtml(t.assignee?.fullName || t.assignee?.email || 'Sin asignar')}</td>
+              <td class="meta">${escapeHtml(fmtDate(t.updatedAt))}</td>
+            </tr>`,
+        )
+        .join('');
+    }
+
     if (!rows.length) {
       view.innerHTML = `
         <div class="toolbar">
@@ -250,6 +352,20 @@ async function renderTicketList() {
         <h1 style="margin:0;font-size:1.25rem">Tickets</h1>
         <a class="btn btn-primary" href="#/tickets/new">Nuevo ticket</a>
       </div>
+      <div class="panel" style="margin-bottom:1rem">
+        <label for="ticket-search">Buscar ticket</label>
+        <input id="ticket-search" placeholder="Buscar por título o descripción" />
+      </div>
+      <div class="ticket-tabs" role="tablist" aria-label="Vistas de tickets">
+        ${tabDefs
+          .map(
+            (tab, index) => `
+              <button class="ticket-tab ${index === 0 ? 'active' : ''}" type="button" data-ticket-tab="${tab.key}">
+                ${tab.label} <span class="badge">${filters[tab.key].length}</span>
+              </button>`,
+          )
+          .join('')}
+      </div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -257,29 +373,59 @@ async function renderTicketList() {
               <th>Título</th>
               <th>Estado</th>
               <th>Prioridad</th>
+              <th>Asignado a</th>
               <th>Actualizado</th>
             </tr>
           </thead>
-          <tbody>
-            ${rows
-              .map(
-                (t) => `
-              <tr data-href="#/tickets/${t.id}" style="cursor:pointer">
-                <td><a href="#/tickets/${t.id}">${escapeHtml(t.title)}</a></td>
-                <td><span class="badge">${escapeHtml(t.status?.name || '')}</span></td>
-                <td><span class="${priorityClass(t.priority?.level)}">${escapeHtml(t.priority?.name || '')}</span></td>
-                <td class="meta">${escapeHtml(fmtDate(t.updatedAt))}</td>
-              </tr>`,
-              )
-              .join('')}
-          </tbody>
+          <tbody id="tickets-table-body">${renderRows(filters.all)}</tbody>
         </table>
       </div>
     `;
-    view.querySelectorAll('tbody tr[data-href]').forEach((tr) => {
-      tr.addEventListener('click', (e) => {
-        if (e.target.closest('a')) return;
-        location.hash = tr.getAttribute('data-href');
+
+    function bindTableRows() {
+      view.querySelectorAll('tbody tr[data-href]').forEach((tr) => {
+        tr.addEventListener('click', (e) => {
+          if (e.target.closest('a')) return;
+          location.hash = tr.getAttribute('data-href');
+        });
+      });
+    }
+
+    bindTableRows();
+    const searchInput = document.getElementById('ticket-search');
+    const runSearch = debounce(async () => {
+      query = String(searchInput?.value || '').trim();
+      rows = await fetchRows(query);
+      filters = buildFilters(rows);
+      const body = document.getElementById('tickets-table-body');
+      if (body) {
+        body.innerHTML = filters.all.length
+          ? renderRows(filters.all)
+          : '<tr><td colspan="5" class="meta">No hay tickets para la búsqueda actual.</td></tr>';
+      }
+      view.querySelectorAll('[data-ticket-tab]').forEach((tabBtn, index) => {
+        const key = tabBtn.getAttribute('data-ticket-tab');
+        tabBtn.classList.toggle('active', index === 0);
+        const badge = tabBtn.querySelector('.badge');
+        if (badge) badge.textContent = String(filters[key]?.length || 0);
+      });
+      bindTableRows();
+    }, 350);
+    searchInput?.addEventListener('input', runSearch);
+
+    view.querySelectorAll('[data-ticket-tab]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const key = btn.getAttribute('data-ticket-tab');
+        const subset = filters[key] || [];
+        const body = document.getElementById('tickets-table-body');
+        if (body) {
+          body.innerHTML = subset.length
+            ? renderRows(subset)
+            : '<tr><td colspan="5" class="meta">No hay tickets en esta vista.</td></tr>';
+        }
+        view.querySelectorAll('[data-ticket-tab]').forEach((tabBtn) => tabBtn.classList.remove('active'));
+        btn.classList.add('active');
+        bindTableRows();
       });
     });
   } catch (err) {
@@ -481,11 +627,11 @@ async function renderReports() {
 async function renderIncidents() {
   view.innerHTML = '<div class="panel"><p class="meta">Cargando incidentes…</p></div>';
   try {
-    const [incidents, products, types] = await Promise.all([
+    const [incidents, catalogBundle] = await Promise.all([
       api.incidents.list(),
-      api.catalogs.products(),
-      api.catalogs.types(),
+      fetchCatalogBundle(),
     ]);
+    const { products, types } = catalogBundle;
     const rows =
       incidents
         .map(
@@ -853,6 +999,7 @@ async function renderAdmin() {
           password: String(fd.get('password') || ''),
           roleCode: fd.get('roleCode'),
         });
+        invalidateUsersListCache();
         showToast('Usuario creado', false);
         e.target.reset();
       } catch (err) {
@@ -1068,7 +1215,7 @@ async function renderTicketDetail(id) {
     const [ticket, { statuses, priorities, products, types }, userList] = await Promise.all([
       api.tickets.get(id),
       fetchCatalogBundle(),
-      api.users.list().catch(() => []),
+      fetchUsersListCached(),
     ]);
 
     view.innerHTML = `
@@ -1089,7 +1236,7 @@ async function renderTicketDetail(id) {
             </div>
             <div>
               <label for="statusId">Estado</label>
-              <select id="statusId" name="statusId" data-ticket-status-immediate="1">
+              <select id="statusId" name="statusId">
                 ${statuses
                   .map(
                     (s) =>
@@ -1259,18 +1406,6 @@ async function renderTicketDetail(id) {
       }
     });
 
-    const statusImmediateEl = document.querySelector('[data-ticket-status-immediate="1"]');
-    statusImmediateEl?.addEventListener('change', async () => {
-      try {
-        await api.tickets.update(id, { statusId: statusImmediateEl.value });
-        showToast('Estado actualizado', false);
-        await renderTicketDetail(id);
-      } catch (err) {
-        showToast(err.message, true);
-        await renderTicketDetail(id);
-      }
-    });
-
     document.getElementById('f-comment').addEventListener('submit', async (e) => {
       e.preventDefault();
       const fd = new FormData(e.target);
@@ -1388,6 +1523,8 @@ async function render() {
 }
 
 function boot() {
+  ensureGlobalLoader();
+  bindGlobalLoaderEvents();
   window.addEventListener('hashchange', () => render());
   render();
 }
