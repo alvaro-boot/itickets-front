@@ -429,8 +429,14 @@ async function renderTicketList() {
       });
     });
   } catch (err) {
-    view.innerHTML = `<div class="panel"><p class="meta">No se pudo cargar la lista.</p></div>`;
-    showToast(err.message, true);
+    const message = err?.message || 'No se pudo cargar la lista.';
+    view.innerHTML = `
+      <div class="panel">
+        <p class="meta">No se pudo cargar la lista.</p>
+        <p class="meta">${escapeHtml(message)}</p>
+      </div>
+    `;
+    showToast(message, true);
   }
 }
 
