@@ -1157,8 +1157,12 @@ async function renderTicketNew() {
   let priorities = [];
   let products = [];
   let types = [];
+  let assignableUsers = [];
   try {
-    ({ statuses, priorities, products, types } = await fetchCatalogBundle());
+    [{ statuses, priorities, products, types }, assignableUsers] = await Promise.all([
+      fetchCatalogBundle(),
+      fetchUsersListCached(),
+    ]);
   } catch (err) {
     view.innerHTML = `<div class="panel"><p>No se pudieron cargar catálogos.</p></div>`;
     showToast(err.message, true);
@@ -1204,6 +1208,16 @@ async function renderTicketNew() {
           </select>
         </div>
         <div style="grid-column:1/-1">
+          <label for="assigneeId">Asignar a (opcional)</label>
+          <select id="assigneeId" name="assigneeId" ${assignableUsers.length ? '' : 'disabled'}>
+            <option value="">— Sin asignar —</option>
+            ${assignableUsers
+              .map((u) => `<option value="${escapeHtml(u.id)}">${escapeHtml(u.fullName)} (${escapeHtml(u.email)})</option>`)
+              .join('')}
+          </select>
+          ${assignableUsers.length ? '' : '<p class="meta" style="margin:.4rem 0 0">No hay usuarios disponibles para asignación.</p>'}
+        </div>
+        <div style="grid-column:1/-1">
           <button class="btn btn-primary" type="submit">Crear</button>
         </div>
       </form>
@@ -1220,6 +1234,7 @@ async function renderTicketNew() {
       priorityId: fd.get('priorityId') || undefined,
       productId: fd.get('productId'),
       ticketTypeId: fd.get('ticketTypeId'),
+      assigneeId: fd.get('assigneeId') || undefined,
     };
     try {
       const t = await api.tickets.create(payload);
