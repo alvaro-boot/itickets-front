@@ -230,6 +230,12 @@
                   :disabled="isBusy"
                 ></textarea>
               </div>
+              <div class="actions-row" style="justify-content: space-between">
+                <input ref="commentFileInput" type="file" :disabled="isBusy" />
+                <button class="btn btn-ghost" type="button" :disabled="isBusy" @click="uploadAttachment">
+                  Subir archivo/foto
+                </button>
+              </div>
               <button class="btn btn-primary" type="submit" :disabled="isBusy">
                 {{ isCommenting ? 'Publicando...' : 'Publicar' }}
               </button>
@@ -266,6 +272,7 @@ import { ticketsService } from '../services/ticketsService';
 import { useCatalogs } from '../../../shared/composables/useCatalogs';
 import { useUsers } from '../../../shared/composables/useUsers';
 import { useUi } from '../../../shared/composables/useUi';
+import { uploadsService } from '../../../shared/services/uploadsService';
 import { eventText, fmtDate } from '../../../shared/utils/format';
 
 const route = useRoute();
@@ -279,6 +286,7 @@ const ticket = ref(null);
 const descriptionEditor = ref(null);
 const assignableUsers = ref([]);
 const commentBody = ref('');
+const commentFileInput = ref(null);
 const isSaving = ref(false);
 const isCommenting = ref(false);
 const isDuplicating = ref(false);
@@ -572,6 +580,25 @@ async function addComment() {
     ui.showToast(error.message || 'No se pudo registrar el comentario.', true);
   } finally {
     isCommenting.value = false;
+  }
+}
+
+async function uploadAttachment() {
+  if (isBusy.value) return;
+  const file = commentFileInput.value?.files?.[0];
+  if (!file) {
+    ui.showToast('Selecciona un archivo antes de subir.', true);
+    return;
+  }
+  try {
+    const uploaded = await uploadsService.uploadFile(file, { folder: 'tickets' });
+    const line = `Archivo adjunto: ${uploaded.url}`;
+    const current = String(commentBody.value || '').trim();
+    commentBody.value = current ? `${current}\n${line}` : line;
+    if (commentFileInput.value) commentFileInput.value.value = '';
+    ui.showToast('Archivo subido y agregado al comentario.', false);
+  } catch (error) {
+    ui.showToast(error.message || 'No se pudo subir el archivo.', true);
   }
 }
 
