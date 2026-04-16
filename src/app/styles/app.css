@@ -1054,6 +1054,30 @@ tbody tr:hover {
   line-height: 1.55;
 }
 
+.comment-composer {
+  position: sticky;
+  top: 0.5rem;
+  z-index: 2;
+  border-radius: 16px;
+  padding: 0.9rem;
+  background: linear-gradient(180deg, rgba(18, 27, 43, 0.94), rgba(12, 18, 32, 0.92));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.comment-composer .btn {
+  width: 100%;
+}
+
+.comment-timeline {
+  margin-top: 0.8rem;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.timeline-item--comment .timeline-item__content {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.03));
+}
+
 .ticket-inline-form {
   display: grid;
   gap: 0.9rem;

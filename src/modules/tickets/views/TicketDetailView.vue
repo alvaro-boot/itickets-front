@@ -209,21 +209,31 @@
                 <p>Actualizaciones rápidas del equipo sobre el caso.</p>
               </div>
             </div>
-            <div class="comments">
-              <div v-if="(ticket.comments || []).length === 0" class="meta">Sin comentarios aún.</div>
-              <div v-for="comment in ticket.comments || []" :key="comment.id || comment.createdAt" class="comment comment--elevated">
-                <span class="who">{{ comment.author?.fullName || 'Usuario' }}</span>
-                <span class="when">{{ fmtDate(comment.createdAt) }}</span>
-                <div class="body">{{ comment.body }}</div>
-              </div>
-            </div>
-            <form class="ticket-inline-form" @submit.prevent="addComment">
+            <form class="ticket-inline-form comment-composer" @submit.prevent="addComment">
               <div class="field-stack">
                 <label for="body">Nuevo comentario</label>
                 <textarea id="body" v-model="commentBody" required minlength="1" placeholder="Escribe una actualización..."></textarea>
               </div>
               <button class="btn btn-primary" type="submit">Publicar</button>
             </form>
+
+            <div class="comment-timeline">
+              <div v-if="(ticket.comments || []).length === 0" class="meta">Sin comentarios aún.</div>
+              <div
+                v-for="comment in ticket.comments || []"
+                :key="comment.id || comment.createdAt"
+                class="timeline-item timeline-item--comment"
+              >
+                <div class="timeline-item__dot"></div>
+                <div class="timeline-item__content">
+                  <div class="timeline-item__header">
+                    <strong>{{ comment.author?.fullName || 'Usuario' }}</strong>
+                    <span>{{ fmtDate(comment.createdAt) }}</span>
+                  </div>
+                  <p>{{ comment.body }}</p>
+                </div>
+              </div>
+            </div>
           </article>
         </aside>
       </section>
