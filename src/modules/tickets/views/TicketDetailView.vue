@@ -330,9 +330,29 @@ function sanitizeRichHtml(input) {
 
 const sanitizedDescription = computed(() => sanitizeRichHtml(ticket.value?.description || ''));
 
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function toEditableHtml(value) {
+  const sanitized = sanitizeRichHtml(value || '');
+  if (sanitized.trim()) return sanitized;
+  const plain = String(value || '').trim();
+  if (!plain) return '';
+  return plain
+    .split(/\n{2,}/)
+    .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, '<br>')}</p>`)
+    .join('');
+}
+
 function setEditorHtml(html) {
   if (!descriptionEditor.value) return;
-  descriptionEditor.value.innerHTML = sanitizeRichHtml(html || '');
+  descriptionEditor.value.innerHTML = toEditableHtml(html || '');
 }
 
 function onEditorInput() {
