@@ -13,6 +13,11 @@
     </div>
 
     <template v-else-if="ticket">
+      <div v-if="isBusy" class="ticket-loading-hint" role="status" aria-live="polite">
+        <span class="ticket-loading-hint__dot"></span>
+        <span>{{ busyMessage }}</span>
+      </div>
+
       <section class="ticket-overview-card">
         <div class="ticket-overview-card__main">
           <p class="spotlight-card__eyebrow">Resumen del caso</p>
@@ -168,8 +173,12 @@
                 </div>
               </div>
               <div class="actions-row" style="margin-top: 1rem">
-                <button class="btn btn-primary" type="button" @click="saveTicket">Guardar cambios</button>
-                <button class="btn btn-ghost" type="button" @click="duplicateTicket">Duplicar y asignar</button>
+                <button class="btn btn-primary" type="button" :disabled="isBusy" @click="saveTicket">
+                  {{ isSaving ? 'Guardando...' : 'Guardar cambios' }}
+                </button>
+                <button class="btn btn-ghost" type="button" :disabled="isBusy" @click="duplicateTicket">
+                  {{ isDuplicating ? 'Duplicando...' : 'Duplicar y asignar' }}
+                </button>
               </div>
             </div>
           </article>
@@ -212,9 +221,18 @@
             <form class="ticket-inline-form comment-composer" @submit.prevent="addComment">
               <div class="field-stack">
                 <label for="body">Nuevo comentario</label>
-                <textarea id="body" v-model="commentBody" required minlength="1" placeholder="Escribe una actualización..."></textarea>
+                <textarea
+                  id="body"
+                  v-model="commentBody"
+                  required
+                  minlength="1"
+                  placeholder="Escribe una actualización..."
+                  :disabled="isBusy"
+                ></textarea>
               </div>
-              <button class="btn btn-primary" type="submit">Publicar</button>
+              <button class="btn btn-primary" type="submit" :disabled="isBusy">
+                {{ isCommenting ? 'Publicando...' : 'Publicar' }}
+              </button>
             </form>
 
             <div class="comment-timeline">
@@ -261,6 +279,9 @@ const ticket = ref(null);
 const descriptionEditor = ref(null);
 const assignableUsers = ref([]);
 const commentBody = ref('');
+const isSaving = ref(false);
+const isCommenting = ref(false);
+const isDuplicating = ref(false);
 const worklog = reactive({
   minutesSpent: null,
   note: '',
@@ -372,6 +393,13 @@ const isClosedStatus = computed(() => {
 });
 
 const showWorklogs = computed(() => isClosedStatus.value);
+const isBusy = computed(() => isSaving.value || isCommenting.value || isDuplicating.value);
+const busyMessage = computed(() => {
+  if (isSaving.value) return 'Guardando cambios del ticket...';
+  if (isCommenting.value) return 'Publicando comentario...';
+  if (isDuplicating.value) return 'Duplicando ticket...';
+  return 'Cargando...';
+});
 
 function syncForm() {
   if (!ticket.value) return;
@@ -383,6 +411,12 @@ function syncForm() {
   form.ticketTypeId = ticket.value.ticketTypeId || '';
   form.assigneeId = ticket.value.assigneeId == null ? '' : String(ticket.value.assigneeId);
   nextTick(() => setEditorHtml(form.description || ''));
+}
+
+function applyTicketSnapshot(snapshot) {
+  if (!snapshot) return;
+  ticket.value = snapshot;
+  syncForm();
 }
 
 async function loadTicket() {
@@ -418,10 +452,12 @@ async function loadTicket() {
 }
 
 async function saveTicket() {
+  if (isBusy.value) return;
+  isSaving.value = true;
   try {
     const assigneeId = form.assigneeId || null;
-    await ticketsService.reassign(route.params.id, { assigneeId });
-    await ticketsService.update(route.params.id, {
+    let snapshot = await ticketsService.reassign(route.params.id, { assigneeId });
+    snapshot = await ticketsService.update(route.params.id, {
       title: form.title,
       description: form.description,
       statusId: form.statusId,
@@ -434,7 +470,7 @@ async function saveTicket() {
     if (showWorklogs.value) {
       const minutes = Number(worklog.minutesSpent);
       if (!Number.isNaN(minutes) && minutes > 0) {
-        await ticketsService.addWorklog(route.params.id, {
+        snapshot = await ticketsService.addWorklog(route.params.id, {
           minutesSpent: minutes,
           note: worklog.note || undefined,
         });
@@ -443,34 +479,44 @@ async function saveTicket() {
       }
     }
 
+    applyTicketSnapshot(snapshot);
     ui.showToast('Cambios guardados.', false);
-    await loadTicket();
   } catch (error) {
     ui.showToast(error.message || 'No se pudo guardar el ticket.', true);
+  } finally {
+    isSaving.value = false;
   }
 }
 
 async function duplicateTicket() {
+  if (isBusy.value) return;
   if (!form.assigneeId) {
     ui.showToast('Selecciona un usuario para duplicar y asignar.', true);
     return;
   }
+  isDuplicating.value = true;
   try {
     const duplicated = await ticketsService.duplicate(route.params.id, { assigneeId: String(form.assigneeId) });
     ui.showToast(`Ticket duplicado: #${duplicated.id}`, false);
     router.push(`/tickets/${duplicated.id}`);
   } catch (error) {
     ui.showToast(error.message || 'No se pudo duplicar el ticket.', true);
+  } finally {
+    isDuplicating.value = false;
   }
 }
 
 async function addComment() {
+  if (isBusy.value) return;
+  isCommenting.value = true;
   try {
-    await ticketsService.comment(route.params.id, { body: commentBody.value });
+    const snapshot = await ticketsService.comment(route.params.id, { body: commentBody.value });
+    applyTicketSnapshot(snapshot);
     commentBody.value = '';
-    await loadTicket();
   } catch (error) {
     ui.showToast(error.message || 'No se pudo registrar el comentario.', true);
+  } finally {
+    isCommenting.value = false;
   }
 }
 
