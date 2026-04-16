@@ -32,48 +32,28 @@
       </form>
     </div>
 
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Titulo</th>
-            <th>Producto</th>
-            <th>Tipo</th>
-            <th>Estado</th>
-            <th>Creado por</th>
-            <th>Actualizado</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="rows.length === 0">
-            <td colspan="6" class="meta">Sin incidentes</td>
-          </tr>
-          <tr v-for="incident in rows" :key="incident.id">
-            <td>{{ incident.title }}</td>
-            <td>{{ incident.product?.name || '' }}</td>
-            <td>{{ incident.ticketType?.name || '' }}</td>
-            <td>
-              <select :value="incident.status" @change="updateStatus(incident.id, $event.target.value)">
-                <option value="OPEN">OPEN</option>
-                <option value="IN_PROGRESS">IN_PROGRESS</option>
-                <option value="RESOLVED">RESOLVED</option>
-              </select>
-            </td>
-            <td>{{ incident.createdBy?.fullName || incident.createdBy?.email || '' }}</td>
-            <td class="meta">{{ fmtDate(incident.updatedAt) }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <DataTable :rows="incidentRows" :columns="incidentColumns" row-key="id" empty-text="Sin incidentes" :initial-page-size="10">
+      <template #cell-status="{ row }">
+        <select :value="row.status" @change="updateStatus(row.id, $event.target.value)">
+          <option value="OPEN">OPEN</option>
+          <option value="IN_PROGRESS">IN_PROGRESS</option>
+          <option value="RESOLVED">RESOLVED</option>
+        </select>
+      </template>
+      <template #cell-updatedAt="{ row }">
+        <span class="meta">{{ fmtDate(row.updatedAt) }}</span>
+      </template>
+    </DataTable>
   </section>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { incidentsService } from '../services/incidentsService';
 import { useCatalogs } from '../../../shared/composables/useCatalogs';
 import { useUi } from '../../../shared/composables/useUi';
 import { fmtDate } from '../../../shared/utils/format';
+import DataTable from '../../../shared/components/DataTable.vue';
 
 const ui = useUi();
 const { fetchCatalogBundle } = useCatalogs();
@@ -89,6 +69,24 @@ const form = reactive({
   productId: '',
   ticketTypeId: '',
 });
+
+const incidentColumns = [
+  { key: 'title', label: 'Titulo' },
+  { key: 'productName', label: 'Producto' },
+  { key: 'typeName', label: 'Tipo' },
+  { key: 'status', label: 'Estado' },
+  { key: 'createdByName', label: 'Creado por' },
+  { key: 'updatedAt', label: 'Actualizado' },
+];
+
+const incidentRows = computed(() =>
+  (rows.value || []).map((incident) => ({
+    ...incident,
+    productName: incident.product?.name || '',
+    typeName: incident.ticketType?.name || '',
+    createdByName: incident.createdBy?.fullName || incident.createdBy?.email || '',
+  })),
+);
 
 async function loadData() {
   try {

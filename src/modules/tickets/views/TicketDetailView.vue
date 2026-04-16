@@ -419,6 +419,20 @@ function applyTicketSnapshot(snapshot) {
   syncForm();
 }
 
+function applyCommentSnapshot(snapshot) {
+  if (!snapshot || !ticket.value) return;
+  // Actualiza solo las secciones dinámicas para evitar sensación de "recarga total".
+  ticket.value = {
+    ...ticket.value,
+    comments: snapshot.comments || [],
+    events: snapshot.events || [],
+    worklogs: snapshot.worklogs || [],
+    totalLoggedMinutes: snapshot.totalLoggedMinutes ?? ticket.value.totalLoggedMinutes,
+    totalLoggedHours: snapshot.totalLoggedHours ?? ticket.value.totalLoggedHours,
+    updatedAt: snapshot.updatedAt ?? ticket.value.updatedAt,
+  };
+}
+
 async function loadTicket() {
   loading.value = true;
   try {
@@ -508,12 +522,31 @@ async function duplicateTicket() {
 
 async function addComment() {
   if (isBusy.value) return;
+  const body = String(commentBody.value || '').trim();
+  if (!body) return;
   isCommenting.value = true;
+  const optimisticId = `tmp-${Date.now()}`;
+  if (ticket.value) {
+    const optimisticComments = [...(ticket.value.comments || [])];
+    optimisticComments.push({
+      id: optimisticId,
+      body,
+      createdAt: new Date().toISOString(),
+      author: { fullName: 'Tú' },
+    });
+    ticket.value = {
+      ...ticket.value,
+      comments: optimisticComments,
+    };
+  }
+  commentBody.value = '';
   try {
-    const snapshot = await ticketsService.comment(route.params.id, { body: commentBody.value });
-    applyTicketSnapshot(snapshot);
-    commentBody.value = '';
+    const snapshot = await ticketsService.comment(route.params.id, { body });
+    applyCommentSnapshot(snapshot);
   } catch (error) {
+    // Si falla, vuelve al estado completo del servidor sin recargar toda la vista.
+    const fallback = await ticketsService.get(route.params.id).catch(() => null);
+    if (fallback) applyCommentSnapshot(fallback);
     ui.showToast(error.message || 'No se pudo registrar el comentario.', true);
   } finally {
     isCommenting.value = false;

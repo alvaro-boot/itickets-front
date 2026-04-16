@@ -31,42 +31,12 @@
     <div class="grid-2">
       <div class="panel">
         <h3 style="margin-top: 0">Productos registrados</h3>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr><th>Codigo</th><th>Nombre</th></tr>
-            </thead>
-            <tbody>
-              <tr v-if="products.length === 0">
-                <td colspan="2" class="meta">Sin productos</td>
-              </tr>
-              <tr v-for="product in products" :key="product.id">
-                <td>{{ product.code }}</td>
-                <td>{{ product.name }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <DataTable :rows="products" :columns="catalogColumns" row-key="id" empty-text="Sin productos" :initial-page-size="10" />
       </div>
 
       <div class="panel">
         <h3 style="margin-top: 0">Tipos registrados</h3>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr><th>Codigo</th><th>Nombre</th></tr>
-            </thead>
-            <tbody>
-              <tr v-if="types.length === 0">
-                <td colspan="2" class="meta">Sin tipos</td>
-              </tr>
-              <tr v-for="type in types" :key="type.id">
-                <td>{{ type.code }}</td>
-                <td>{{ type.name }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <DataTable :rows="types" :columns="catalogColumns" row-key="id" empty-text="Sin tipos" :initial-page-size="10" />
       </div>
     </div>
   </section>
@@ -78,6 +48,7 @@ import { catalogsService } from '../services/catalogsService';
 import { useCatalogs } from '../../../shared/composables/useCatalogs';
 import { useUi } from '../../../shared/composables/useUi';
 import { slugifyCode } from '../../../shared/utils/format';
+import DataTable from '../../../shared/components/DataTable.vue';
 
 const ui = useUi();
 const { invalidateCatalogBundle } = useCatalogs();
@@ -86,6 +57,10 @@ const products = ref([]);
 const types = ref([]);
 const productForm = ref({ name: '', code: '' });
 const typeForm = ref({ name: '', code: '' });
+const catalogColumns = [
+  { key: 'code', label: 'Codigo' },
+  { key: 'name', label: 'Nombre' },
+];
 
 async function loadCatalogs() {
   try {

@@ -24,40 +24,21 @@
       </form>
     </div>
 
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Titulo</th>
-            <th>Fecha</th>
-            <th>Estado</th>
-            <th>Accion</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="rows.length === 0">
-            <td colspan="4" class="meta">No tienes tareas registradas</td>
-          </tr>
-          <tr v-for="task in rows" :key="task.id">
-            <td>{{ task.title }}</td>
-            <td>{{ task.workDate }}</td>
-            <td>{{ task.isDone ? 'Completada' : 'Pendiente' }}</td>
-            <td>
-              <button class="btn btn-ghost" type="button" @click="toggleTask(task)">
-                {{ task.isDone ? 'Reabrir' : 'Completar' }}
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <DataTable :rows="taskRows" :columns="taskColumns" row-key="id" empty-text="No tienes tareas registradas" :initial-page-size="10">
+      <template #cell-actionLabel="{ row }">
+        <button class="btn btn-ghost" type="button" @click="toggleTask(row)">
+          {{ row.actionLabel }}
+        </button>
+      </template>
+    </DataTable>
   </section>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { tasksService } from '../services/tasksService';
 import { useUi } from '../../../shared/composables/useUi';
+import DataTable from '../../../shared/components/DataTable.vue';
 
 const ui = useUi();
 const rows = ref([]);
@@ -66,6 +47,21 @@ const form = reactive({
   description: '',
   workDate: new Date().toISOString().slice(0, 10),
 });
+
+const taskColumns = [
+  { key: 'title', label: 'Titulo' },
+  { key: 'workDate', label: 'Fecha' },
+  { key: 'statusLabel', label: 'Estado' },
+  { key: 'actionLabel', label: 'Accion' },
+];
+
+const taskRows = computed(() =>
+  (rows.value || []).map((task) => ({
+    ...task,
+    statusLabel: task.isDone ? 'Completada' : 'Pendiente',
+    actionLabel: task.isDone ? 'Reabrir' : 'Completar',
+  })),
+);
 
 async function loadTasks() {
   try {

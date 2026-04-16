@@ -75,68 +75,30 @@
       </div>
     </div>
 
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Ticket</th>
-            <th>Creado</th>
-            <th>Cerrado</th>
-            <th>Resolución (min)</th>
-            <th>Tiempo trabajado (min)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="(resolution.tickets || []).length === 0">
-            <td colspan="5" class="meta">Sin tickets resueltos en rango</td>
-          </tr>
-          <tr v-for="ticket in resolution.tickets || []" :key="ticket.id || ticket.title">
-            <td>{{ ticket.title }}</td>
-            <td>{{ fmtDate(ticket.createdAt) }}</td>
-            <td>{{ fmtDate(ticket.closedAt) }}</td>
-            <td>{{ ticket.resolutionMinutes }}</td>
-            <td>{{ ticket.loggedMinutes || 0 }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <DataTable
+      :rows="resolutionTicketsRows"
+      :columns="resolutionColumns"
+      row-key="id"
+      empty-text="Sin tickets resueltos en rango"
+      :initial-page-size="10"
+    />
 
     <div class="grid-2">
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>Usuario</th><th>Email</th><th>Cantidad</th></tr>
-          </thead>
-          <tbody>
-            <tr v-if="(byUser.byAssignee || []).length === 0">
-              <td colspan="3" class="meta">Sin datos</td>
-            </tr>
-            <tr v-for="user in byUser.byAssignee || []" :key="`assignee-${user.email}-${user.count}`">
-              <td>{{ user.fullName || '' }}</td>
-              <td>{{ user.email || '' }}</td>
-              <td>{{ user.count }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        :rows="assigneeRows"
+        :columns="usersColumns"
+        row-key="rowKey"
+        empty-text="Sin datos"
+        :initial-page-size="10"
+      />
 
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>Usuario</th><th>Email</th><th>Cantidad</th></tr>
-          </thead>
-          <tbody>
-            <tr v-if="(byUser.byCreator || []).length === 0">
-              <td colspan="3" class="meta">Sin datos</td>
-            </tr>
-            <tr v-for="user in byUser.byCreator || []" :key="`creator-${user.email}-${user.count}`">
-              <td>{{ user.fullName || '' }}</td>
-              <td>{{ user.email || '' }}</td>
-              <td>{{ user.count }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        :rows="creatorRows"
+        :columns="usersColumns"
+        row-key="rowKey"
+        empty-text="Sin datos"
+        :initial-page-size="10"
+      />
     </div>
   </section>
 </template>
@@ -146,6 +108,7 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { reportsService } from '../services/reportsService';
 import { useUi } from '../../../shared/composables/useUi';
 import { fmtDate } from '../../../shared/utils/format';
+import DataTable from '../../../shared/components/DataTable.vue';
 
 const ui = useUi();
 const now = new Date();
@@ -157,6 +120,18 @@ const filters = reactive({
 
 const resolution = ref({});
 const byUser = ref({});
+const resolutionColumns = [
+  { key: 'title', label: 'Ticket' },
+  { key: 'createdAtFmt', label: 'Creado' },
+  { key: 'closedAtFmt', label: 'Cerrado' },
+  { key: 'resolutionMinutes', label: 'Resolución (min)' },
+  { key: 'loggedMinutes', label: 'Tiempo trabajado (min)' },
+];
+const usersColumns = [
+  { key: 'fullName', label: 'Usuario' },
+  { key: 'email', label: 'Email' },
+  { key: 'count', label: 'Cantidad' },
+];
 
 const assigneeData = computed(() =>
   (byUser.value.byAssignee || []).map((user) => ({
@@ -179,6 +154,36 @@ const avgMinutes = computed(() => Math.round(avgHours.value * 60));
 const totalCreatedByUsers = computed(() => creatorData.value.reduce((sum, item) => sum + item.value, 0));
 const solvedPct = computed(() =>
   totalCreatedByUsers.value ? Math.round(((Number(resolution.value.totalResolved) || 0) / totalCreatedByUsers.value) * 100) : 0,
+);
+
+const resolutionTicketsRows = computed(() =>
+  (resolution.value.tickets || []).map((ticket) => ({
+    ...ticket,
+    id: ticket.id || `${ticket.title}-${ticket.createdAt}`,
+    createdAtFmt: fmtDate(ticket.createdAt),
+    closedAtFmt: fmtDate(ticket.closedAt),
+    loggedMinutes: ticket.loggedMinutes || 0,
+  })),
+);
+
+const assigneeRows = computed(() =>
+  (byUser.value.byAssignee || []).map((user) => ({
+    ...user,
+    fullName: user.fullName || '',
+    email: user.email || '',
+    count: user.count,
+    rowKey: `assignee-${user.email || user.fullName || 'na'}-${user.count}`,
+  })),
+);
+
+const creatorRows = computed(() =>
+  (byUser.value.byCreator || []).map((user) => ({
+    ...user,
+    fullName: user.fullName || '',
+    email: user.email || '',
+    count: user.count,
+    rowKey: `creator-${user.email || user.fullName || 'na'}-${user.count}`,
+  })),
 );
 
 function barPct(value, max) {
