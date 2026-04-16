@@ -1,4 +1,4 @@
-import { createRouter, createWebHashHistory } from 'vue-router';
+import { createRouter, createWebHistory } from 'vue-router';
 import AppShell from '../app/layouts/AppShell.vue';
 import LoginView from '../modules/auth/views/LoginView.vue';
 import TicketsListView from '../modules/tickets/views/TicketsListView.vue';
@@ -123,7 +123,7 @@ const routes = [
 ];
 
 const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHistory(),
   routes,
 });
 

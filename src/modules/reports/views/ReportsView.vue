@@ -42,7 +42,11 @@
     </div>
 
     <div v-if="isLoading" class="panel">
-      <p class="meta">Generando reportes...</p>
+      <div class="skeleton-stack">
+        <div class="skeleton-line skeleton-line--lg skeleton-line--w40"></div>
+        <div class="skeleton-line skeleton-line--w90"></div>
+        <div class="skeleton-line skeleton-line--w75"></div>
+      </div>
     </div>
 
     <div class="cards">

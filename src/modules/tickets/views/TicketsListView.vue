@@ -129,10 +129,18 @@
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="5" class="meta">Cargando...</td>
+            <td colspan="5">
+              <div class="skeleton-stack">
+                <div class="skeleton-line skeleton-line--lg skeleton-line--w75"></div>
+                <div class="skeleton-line skeleton-line--w90"></div>
+                <div class="skeleton-line skeleton-line--w60"></div>
+              </div>
+            </td>
           </tr>
           <tr v-else-if="visibleRows.length === 0">
-            <td colspan="5" class="meta">No hay tickets para esta vista.</td>
+            <td colspan="5">
+              <div class="empty-state">No hay tickets para esta vista.</div>
+            </td>
           </tr>
           <tr v-for="ticket in visibleRows" :key="ticket.id">
             <td>
