@@ -1,0 +1,404 @@
+<template>
+  <section class="stack">
+    <div class="page-header">
+      <div class="page-title">
+        <h2>Ticket #{{ route.params.id }}</h2>
+        <p>Organiza el seguimiento del caso, controla su contexto y documenta todo el avance en un solo lugar.</p>
+      </div>
+      <RouterLink class="btn btn-ghost" to="/tickets">Lista</RouterLink>
+    </div>
+
+    <div v-if="loading" class="panel">
+      <p class="meta">Cargando ticket...</p>
+    </div>
+
+    <template v-else-if="ticket">
+      <section class="ticket-overview-card">
+        <div class="ticket-overview-card__main">
+          <p class="spotlight-card__eyebrow">Resumen del caso</p>
+          <h3 class="ticket-overview-card__title">{{ ticket.title }}</h3>
+          <p class="ticket-overview-card__copy">
+            {{ ticket.description || 'Este ticket aún no tiene una descripción detallada.' }}
+          </p>
+        </div>
+        <div class="ticket-overview-card__side">
+          <div class="status-pill ticket-status-pill">
+            <span class="status-dot"></span>
+            {{ selectedStatusName }}
+          </div>
+          <p class="ticket-overview-card__side-meta">Prioridad {{ selectedPriorityName }}</p>
+        </div>
+      </section>
+
+      <section class="stats-grid">
+        <article class="stat-card">
+          <p class="stat-card__label">Tiempo registrado</p>
+          <p class="stat-card__value">{{ ticket.totalLoggedMinutes || 0 }} min</p>
+          <p class="stat-card__hint">{{ ticket.totalLoggedHours || 0 }} horas acumuladas en este ticket</p>
+        </article>
+        <article class="stat-card">
+          <p class="stat-card__label">Última actualización</p>
+          <p class="stat-card__value">{{ shortUpdatedAt }}</p>
+          <p class="stat-card__hint">Último cambio documentado sobre el caso</p>
+        </article>
+        <article class="stat-card">
+          <p class="stat-card__label">Actividad</p>
+          <p class="stat-card__value">{{ activityCount }}</p>
+          <p class="stat-card__hint">Eventos, comentarios y registros vinculados</p>
+        </article>
+      </section>
+
+      <section class="ticket-detail-grid">
+        <div class="ticket-detail-grid__main stack">
+          <article class="panel ticket-panel">
+            <div class="panel-header">
+              <div class="page-title">
+                <h2 style="font-size: 1.05rem">Datos principales</h2>
+                <p>Edita el contexto del ticket y mantén limpia la información operativa.</p>
+              </div>
+            </div>
+            <div class="ticket-edit-block">
+              <div class="grid-2">
+                <div class="field-stack" style="grid-column: 1 / -1">
+                  <label for="title">Título</label>
+                  <input id="title" v-model.trim="form.title" required minlength="3" />
+                </div>
+                <div class="field-stack" style="grid-column: 1 / -1">
+                  <label for="description">Descripción</label>
+                  <textarea id="description" v-model="form.description"></textarea>
+                </div>
+                <div class="field-stack">
+                  <label for="statusId">Estado</label>
+                  <select id="statusId" v-model="form.statusId">
+                    <option v-for="status in catalogs.statuses" :key="status.id" :value="status.id">{{ status.name }}</option>
+                  </select>
+                </div>
+                <div class="field-stack">
+                  <label for="priorityId">Prioridad</label>
+                  <select id="priorityId" v-model="form.priorityId">
+                    <option v-for="priority in catalogs.priorities" :key="priority.id" :value="priority.id">
+                      {{ priority.name }}
+                    </option>
+                  </select>
+                </div>
+                <div class="field-stack">
+                  <label for="productId">Producto</label>
+                  <select id="productId" v-model="form.productId">
+                    <option v-for="product in catalogs.products" :key="product.id" :value="product.id">{{ product.name }}</option>
+                  </select>
+                </div>
+                <div class="field-stack">
+                  <label for="ticketTypeId">Tipo</label>
+                  <select id="ticketTypeId" v-model="form.ticketTypeId">
+                    <option v-for="type in catalogs.types" :key="type.id" :value="type.id">{{ type.name }}</option>
+                  </select>
+                </div>
+                <div class="field-stack" style="grid-column: 1 / -1">
+                  <label for="assigneeId">Asignado a</label>
+                  <select id="assigneeId" v-model="form.assigneeId">
+                    <option value="">— Sin asignar —</option>
+                    <option v-for="user in assignableUsers" :key="user.id" :value="String(user.id)">
+                      {{ user.fullName }} ({{ user.email }})
+                    </option>
+                  </select>
+                  <p v-if="assignableUsers.length === 0" class="meta">No tienes permiso para reasignar usuarios.</p>
+                </div>
+
+                <div v-if="showWorklogs" style="grid-column: 1 / -1" class="ticket-time-block">
+                  <div class="panel-header">
+                    <div class="page-title">
+                      <h2 style="font-size: 1.05rem">Registro de tiempo</h2>
+                      <p>Controla dedicación y contexto del trabajo invertido.</p>
+                    </div>
+                  </div>
+                  <div class="comments">
+                    <div v-if="(ticket.worklogs || []).length === 0" class="meta">Sin registros de tiempo aún.</div>
+                    <div
+                      v-for="worklog in ticket.worklogs || []"
+                      :key="worklog.id || worklog.createdAt"
+                      class="comment comment--elevated"
+                    >
+                      <span class="who">{{ worklog.author?.fullName || 'Usuario' }}</span>
+                      <span class="when">{{ fmtDate(worklog.createdAt) }}</span>
+                      <div class="body">
+                        {{ worklog.minutesSpent }} minutos<span v-if="worklog.note"> · {{ worklog.note }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="ticket-inline-form">
+                    <p class="meta" style="margin: 0 0 0.6rem">
+                      Para registrar tiempo, completa los minutos y usa “Guardar cambios”.
+                    </p>
+                    <div class="grid-2">
+                      <div class="field-stack">
+                        <label for="minutesSpent">Minutos trabajados</label>
+                        <input
+                          id="minutesSpent"
+                          v-model.number="worklog.minutesSpent"
+                          type="number"
+                          min="1"
+                          max="1440"
+                          required
+                        />
+                      </div>
+                      <div class="field-stack">
+                        <label for="worklogNote">Nota (opcional)</label>
+                        <input id="worklogNote" v-model="worklog.note" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="actions-row" style="margin-top: 1rem">
+                <button class="btn btn-primary" type="button" @click="saveTicket">Guardar cambios</button>
+                <button class="btn btn-ghost" type="button" @click="duplicateTicket">Duplicar y asignar</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="panel ticket-panel">
+            <div class="panel-header">
+              <div class="page-title">
+                <h2 style="font-size: 1.05rem">Historial de movimientos</h2>
+                <p>Rastrea los cambios importantes del ticket en orden cronológico.</p>
+              </div>
+            </div>
+            <div class="timeline-list">
+              <div v-if="(ticket.events || []).length === 0" class="meta">Sin movimientos registrados aún.</div>
+              <div
+                v-for="event in ticket.events || []"
+                :key="event.id || `${event.createdAt}-${event.eventType}`"
+                class="timeline-item"
+              >
+                <div class="timeline-item__dot"></div>
+                <div class="timeline-item__content">
+                  <div class="timeline-item__header">
+                    <strong>{{ event.actor?.fullName || 'Sistema' }}</strong>
+                    <span>{{ fmtDate(event.createdAt) }}</span>
+                  </div>
+                  <p>{{ eventText(event) }}</p>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <aside class="ticket-detail-grid__side stack">
+          <article class="panel ticket-panel">
+            <div class="panel-header">
+              <div class="page-title">
+                <h2 style="font-size: 1.05rem">Comentarios</h2>
+                <p>Actualizaciones rápidas del equipo sobre el caso.</p>
+              </div>
+            </div>
+            <div class="comments">
+              <div v-if="(ticket.comments || []).length === 0" class="meta">Sin comentarios aún.</div>
+              <div v-for="comment in ticket.comments || []" :key="comment.id || comment.createdAt" class="comment comment--elevated">
+                <span class="who">{{ comment.author?.fullName || 'Usuario' }}</span>
+                <span class="when">{{ fmtDate(comment.createdAt) }}</span>
+                <div class="body">{{ comment.body }}</div>
+              </div>
+            </div>
+            <form class="ticket-inline-form" @submit.prevent="addComment">
+              <div class="field-stack">
+                <label for="body">Nuevo comentario</label>
+                <textarea id="body" v-model="commentBody" required minlength="1" placeholder="Escribe una actualización..."></textarea>
+              </div>
+              <button class="btn btn-primary" type="submit">Publicar</button>
+            </form>
+          </article>
+        </aside>
+      </section>
+    </template>
+  </section>
+</template>
+
+<script setup>
+import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
+import { ticketsService } from '../services/ticketsService';
+import { useCatalogs } from '../../../shared/composables/useCatalogs';
+import { useUsers } from '../../../shared/composables/useUsers';
+import { useUi } from '../../../shared/composables/useUi';
+import { eventText, fmtDate } from '../../../shared/utils/format';
+
+const route = useRoute();
+const router = useRouter();
+const ui = useUi();
+const { fetchCatalogBundle } = useCatalogs();
+const { fetchUsersList } = useUsers();
+
+const loading = ref(false);
+const ticket = ref(null);
+const assignableUsers = ref([]);
+const commentBody = ref('');
+const worklog = reactive({
+  minutesSpent: null,
+  note: '',
+});
+const catalogs = reactive({
+  statuses: [],
+  priorities: [],
+  products: [],
+  types: [],
+});
+const form = reactive({
+  title: '',
+  description: '',
+  statusId: '',
+  priorityId: '',
+  productId: '',
+  ticketTypeId: '',
+  assigneeId: '',
+});
+
+const selectedStatusName = computed(
+  () => catalogs.statuses.find((status) => String(status.id) === String(form.statusId))?.name || ticket.value?.status?.name || 'Sin estado',
+);
+
+const selectedPriorityName = computed(
+  () =>
+    catalogs.priorities.find((priority) => String(priority.id) === String(form.priorityId))?.name ||
+    ticket.value?.priority?.name ||
+    'Sin prioridad',
+);
+
+const shortUpdatedAt = computed(() => {
+  if (!ticket.value?.updatedAt) return '—';
+  try {
+    return new Date(ticket.value.updatedAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+  } catch {
+    return String(ticket.value.updatedAt);
+  }
+});
+
+const activityCount = computed(() => {
+  const events = ticket.value?.events?.length || 0;
+  const comments = ticket.value?.comments?.length || 0;
+  const worklogs = ticket.value?.worklogs?.length || 0;
+  return events + comments + worklogs;
+});
+
+const selectedStatusCode = computed(() => {
+  const st = catalogs.statuses.find((status) => String(status.id) === String(form.statusId));
+  return st?.code ? String(st.code) : '';
+});
+
+const isClosedStatus = computed(() => {
+  if (ticket.value?.closedAt) return true;
+  const name = String(selectedStatusName.value || '').toLowerCase();
+  const code = String(selectedStatusCode.value || '').toLowerCase();
+  return name.includes('cerrad') || code.includes('closed');
+});
+
+const showWorklogs = computed(() => isClosedStatus.value);
+
+function syncForm() {
+  if (!ticket.value) return;
+  form.title = ticket.value.title || '';
+  form.description = ticket.value.description || '';
+  form.statusId = ticket.value.statusId || '';
+  form.priorityId = ticket.value.priorityId || '';
+  form.productId = ticket.value.productId || '';
+  form.ticketTypeId = ticket.value.ticketTypeId || '';
+  form.assigneeId = ticket.value.assigneeId == null ? '' : String(ticket.value.assigneeId);
+}
+
+async function loadTicket() {
+  loading.value = true;
+  try {
+    const [ticketRow, catalogBundle, userList] = await Promise.all([
+      ticketsService.get(route.params.id),
+      fetchCatalogBundle(),
+      fetchUsersList(),
+    ]);
+
+    ticket.value = ticketRow;
+    Object.assign(catalogs, catalogBundle);
+
+    const usersMap = new Map((userList || []).map((user) => [String(user.id), user]));
+    if (ticketRow.assigneeId && !usersMap.has(String(ticketRow.assigneeId))) {
+      usersMap.set(String(ticketRow.assigneeId), {
+        id: ticketRow.assigneeId,
+        fullName: ticketRow.assignee?.fullName || 'Usuario asignado',
+        email: ticketRow.assignee?.email || '',
+      });
+    }
+    assignableUsers.value = Array.from(usersMap.values()).sort((a, b) =>
+      String(a.fullName || '').localeCompare(String(b.fullName || ''), 'es'),
+    );
+
+    syncForm();
+  } catch (error) {
+    ui.showToast(error.message || 'No se pudo cargar el ticket.', true);
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function saveTicket() {
+  try {
+    const assigneeId = form.assigneeId || null;
+    await ticketsService.reassign(route.params.id, { assigneeId });
+    await ticketsService.update(route.params.id, {
+      title: form.title,
+      description: form.description,
+      statusId: form.statusId,
+      priorityId: form.priorityId,
+      productId: form.productId,
+      ticketTypeId: form.ticketTypeId,
+    });
+
+    // Registrar tiempo "en el mismo guardado" cuando el ticket está cerrado y el usuario ingresa minutos.
+    if (showWorklogs.value) {
+      const minutes = Number(worklog.minutesSpent);
+      if (!Number.isNaN(minutes) && minutes > 0) {
+        await ticketsService.addWorklog(route.params.id, {
+          minutesSpent: minutes,
+          note: worklog.note || undefined,
+        });
+        worklog.minutesSpent = null;
+        worklog.note = '';
+      }
+    }
+
+    ui.showToast('Cambios guardados.', false);
+    await loadTicket();
+  } catch (error) {
+    ui.showToast(error.message || 'No se pudo guardar el ticket.', true);
+  }
+}
+
+async function duplicateTicket() {
+  if (!form.assigneeId) {
+    ui.showToast('Selecciona un usuario para duplicar y asignar.', true);
+    return;
+  }
+  try {
+    const duplicated = await ticketsService.duplicate(route.params.id, { assigneeId: String(form.assigneeId) });
+    ui.showToast(`Ticket duplicado: #${duplicated.id}`, false);
+    router.push(`/tickets/${duplicated.id}`);
+  } catch (error) {
+    ui.showToast(error.message || 'No se pudo duplicar el ticket.', true);
+  }
+}
+
+async function addComment() {
+  try {
+    await ticketsService.comment(route.params.id, { body: commentBody.value });
+    commentBody.value = '';
+    await loadTicket();
+  } catch (error) {
+    ui.showToast(error.message || 'No se pudo registrar el comentario.', true);
+  }
+}
+
+onMounted(loadTicket);
+
+watch(
+  () => route.params.id,
+  () => {
+    loadTicket();
+  },
+);
+</script>
