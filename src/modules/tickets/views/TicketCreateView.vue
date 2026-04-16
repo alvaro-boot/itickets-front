@@ -94,6 +94,11 @@
               </select>
               <p v-if="users.length === 0" class="meta">No hay usuarios disponibles para asignación.</p>
             </div>
+            <div class="field-stack" style="grid-column: 1 / -1">
+              <label for="attachments">Adjuntos (opcional)</label>
+              <input id="attachments" ref="attachmentsInput" type="file" multiple />
+              <p class="meta">Puedes subir fotos o archivos al crear el ticket.</p>
+            </div>
             <div style="grid-column: 1 / -1">
               <button class="btn btn-primary" type="submit">Crear ticket</button>
             </div>
@@ -140,6 +145,7 @@ import { ticketsService } from '../services/ticketsService';
 import { useCatalogs } from '../../../shared/composables/useCatalogs';
 import { useUsers } from '../../../shared/composables/useUsers';
 import { useUi } from '../../../shared/composables/useUi';
+import { uploadsService } from '../../../shared/services/uploadsService';
 
 const router = useRouter();
 const ui = useUi();
@@ -155,6 +161,7 @@ const catalogs = reactive({
 
 const users = ref([]);
 const descriptionEditor = ref(null);
+const attachmentsInput = ref(null);
 const form = reactive({
   title: '',
   description: '',
@@ -239,6 +246,17 @@ async function submit() {
       ticketTypeId: form.ticketTypeId,
       assigneeId: form.assigneeId || undefined,
     });
+    const files = Array.from(attachmentsInput.value?.files || []);
+    if (files.length) {
+      const uploaded = await Promise.all(
+        files.map((file) => uploadsService.uploadFile(file, { folder: `tickets/${ticket.id}` })),
+      );
+      const commentBody = [
+        'Adjuntos cargados al crear el ticket:',
+        ...uploaded.map((item) => `- ${item.name}: ${item.url}`),
+      ].join('\n');
+      await ticketsService.comment(ticket.id, { body: commentBody });
+    }
     router.push(`/tickets/${ticket.id}`);
   } catch (error) {
     ui.showToast(error.message || 'No se pudo crear el ticket.', true);
