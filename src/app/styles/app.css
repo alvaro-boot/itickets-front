@@ -903,6 +903,32 @@ tbody tr:hover {
   align-items: center;
 }
 
+.datatable__sort-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  color: inherit;
+  padding: 0;
+  font: inherit;
+  font-size: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+
+.datatable__sort-btn--active {
+  color: #dce7ff;
+}
+
+.datatable__sort-indicator {
+  color: #9fb4dd;
+  font-size: 0.8rem;
+}
+
 .pagination-pages {
   display: flex;
   gap: 0.45rem;

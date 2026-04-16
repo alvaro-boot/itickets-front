@@ -20,7 +20,19 @@
         <thead>
           <tr>
             <th v-for="column in columns" :key="column.key">
-              {{ column.label }}
+              <button
+                v-if="isSortable(column)"
+                type="button"
+                class="datatable__sort-btn"
+                :class="{ 'datatable__sort-btn--active': sortKey === column.key }"
+                @click="toggleSort(column.key)"
+              >
+                <span>{{ column.label }}</span>
+                <span class="datatable__sort-indicator">
+                  {{ sortKey === column.key ? (sortDirection === 'asc' ? '▲' : '▼') : '↕' }}
+                </span>
+              </button>
+              <span v-else>{{ column.label }}</span>
             </th>
           </tr>
         </thead>
@@ -41,7 +53,7 @@
 
     <div class="table-footer">
       <div class="table-footer__meta">
-        Mostrando {{ startIndex }}-{{ endIndex }} de {{ filteredRows.length }} registros
+        Mostrando {{ startIndex }}-{{ endIndex }} de {{ sortedRows.length }} registros
       </div>
       <div class="table-footer__controls">
         <button class="btn btn-ghost pagination-btn" type="button" :disabled="page === 1" @click="page -= 1">
@@ -83,6 +95,8 @@ const props = defineProps({
 const search = ref('');
 const page = ref(1);
 const pageSize = ref(props.initialPageSize);
+const sortKey = ref('');
+const sortDirection = ref('asc');
 const searchId = `datatable-search-${Math.random().toString(36).slice(2, 8)}`;
 
 const normalizedPageSizeOptions = computed(() =>
@@ -101,14 +115,43 @@ const filteredRows = computed(() => {
   );
 });
 
-const totalPages = computed(() => Math.max(1, Math.ceil(filteredRows.value.length / pageSize.value)));
+function isSortable(column) {
+  return column?.sortable !== false;
+}
 
-const startIndex = computed(() => (filteredRows.value.length ? (page.value - 1) * pageSize.value + 1 : 0));
-const endIndex = computed(() => Math.min(page.value * pageSize.value, filteredRows.value.length));
+function normalizeForSort(value) {
+  if (value == null) return '';
+  if (typeof value === 'number') return value;
+  if (typeof value === 'boolean') return value ? 1 : 0;
+  if (value instanceof Date) return value.getTime();
+  const raw = String(value).trim();
+  const numeric = Number(raw.replace(/,/g, ''));
+  if (raw !== '' && Number.isFinite(numeric)) return numeric;
+  const dateTs = Date.parse(raw);
+  if (!Number.isNaN(dateTs) && /[-/:T]/.test(raw)) return dateTs;
+  return raw.toLowerCase();
+}
+
+const sortedRows = computed(() => {
+  if (!sortKey.value) return filteredRows.value;
+  const direction = sortDirection.value === 'asc' ? 1 : -1;
+  return [...filteredRows.value].sort((a, b) => {
+    const left = normalizeForSort(a?.[sortKey.value]);
+    const right = normalizeForSort(b?.[sortKey.value]);
+    if (left < right) return -1 * direction;
+    if (left > right) return 1 * direction;
+    return 0;
+  });
+});
+
+const totalPages = computed(() => Math.max(1, Math.ceil(sortedRows.value.length / pageSize.value)));
+
+const startIndex = computed(() => (sortedRows.value.length ? (page.value - 1) * pageSize.value + 1 : 0));
+const endIndex = computed(() => Math.min(page.value * pageSize.value, sortedRows.value.length));
 
 const pagedRows = computed(() => {
   const start = (page.value - 1) * pageSize.value;
-  return filteredRows.value.slice(start, start + pageSize.value);
+  return sortedRows.value.slice(start, start + pageSize.value);
 });
 
 const pageButtons = computed(() => {
@@ -128,4 +171,13 @@ watch([search, pageSize, () => props.rows], () => {
 watch(totalPages, (next) => {
   if (page.value > next) page.value = next;
 });
+
+function toggleSort(key) {
+  if (sortKey.value !== key) {
+    sortKey.value = key;
+    sortDirection.value = 'asc';
+    return;
+  }
+  sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
+}
 </script>
