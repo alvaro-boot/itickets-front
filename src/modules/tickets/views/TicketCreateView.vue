@@ -41,7 +41,22 @@
             </div>
             <div class="field-stack" style="grid-column: 1 / -1">
               <label for="description">Descripción</label>
-              <textarea id="description" v-model="form.description" placeholder="Contexto, pasos, entorno, archivos o detalles clave..."></textarea>
+              <div class="actions-row" style="margin-bottom: 0.45rem">
+                <button class="btn btn-ghost" type="button" @click="execRich('bold')"><strong>B</strong></button>
+                <button class="btn btn-ghost" type="button" @click="execRich('italic')"><em>I</em></button>
+                <button class="btn btn-ghost" type="button" @click="execRich('underline')"><u>U</u></button>
+                <button class="btn btn-ghost" type="button" @click="execRich('insertUnorderedList')">Lista</button>
+                <button class="btn btn-ghost" type="button" @click="insertLink">Link</button>
+                <button class="btn btn-ghost" type="button" @click="execRich('removeFormat')">Limpiar</button>
+              </div>
+              <div
+                id="description"
+                ref="descriptionEditor"
+                class="rich-editor"
+                contenteditable="true"
+                @input="onEditorInput"
+                @blur="onEditorInput"
+              ></div>
             </div>
             <div class="field-stack">
               <label for="statusId">Estado</label>
@@ -119,7 +134,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { nextTick, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { ticketsService } from '../services/ticketsService';
 import { useCatalogs } from '../../../shared/composables/useCatalogs';
@@ -139,6 +154,7 @@ const catalogs = reactive({
 });
 
 const users = ref([]);
+const descriptionEditor = ref(null);
 const form = reactive({
   title: '',
   description: '',
@@ -148,6 +164,55 @@ const form = reactive({
   ticketTypeId: '',
   assigneeId: '',
 });
+
+function sanitizeRichHtml(input) {
+  if (!input) return '';
+  const template = document.createElement('template');
+  template.innerHTML = String(input);
+  const allowedTags = new Set(['P', 'BR', 'STRONG', 'B', 'EM', 'I', 'U', 'UL', 'OL', 'LI', 'A']);
+  template.content.querySelectorAll('*').forEach((node) => {
+    if (!allowedTags.has(node.tagName)) {
+      node.replaceWith(document.createTextNode(node.textContent || ''));
+      return;
+    }
+    [...node.attributes].forEach((attr) => {
+      const name = attr.name.toLowerCase();
+      const isLinkAttr = node.tagName === 'A' && (name === 'href' || name === 'target' || name === 'rel');
+      if (!isLinkAttr) node.removeAttribute(attr.name);
+      if (name === 'href' && /^(javascript|data):/i.test(String(attr.value || '').trim())) {
+        node.removeAttribute('href');
+      }
+    });
+    if (node.tagName === 'A') {
+      node.setAttribute('target', '_blank');
+      node.setAttribute('rel', 'noopener noreferrer');
+    }
+  });
+  return template.innerHTML;
+}
+
+function setEditorHtml(html) {
+  if (!descriptionEditor.value) return;
+  descriptionEditor.value.innerHTML = sanitizeRichHtml(html || '');
+}
+
+function onEditorInput() {
+  form.description = sanitizeRichHtml(descriptionEditor.value?.innerHTML || '');
+}
+
+function execRich(command) {
+  descriptionEditor.value?.focus();
+  document.execCommand(command, false);
+  onEditorInput();
+}
+
+function insertLink() {
+  const url = window.prompt('Ingresa la URL (https://...)');
+  if (!url) return;
+  descriptionEditor.value?.focus();
+  document.execCommand('createLink', false, String(url).trim());
+  onEditorInput();
+}
 
 async function loadData() {
   try {
@@ -181,4 +246,8 @@ async function submit() {
 }
 
 onMounted(loadData);
+onMounted(async () => {
+  await nextTick();
+  setEditorHtml(form.description || '');
+});
 </script>
