@@ -1,11 +1,12 @@
 import { request } from '../../../shared/services/httpClient';
 
 export const ticketsService = {
-  list: ({ q, from, to, page = 1, limit = 25 } = {}) => {
+  list: ({ q, from, to, statusId, page = 1, limit = 25 } = {}) => {
     const params = new URLSearchParams();
     if (q && String(q).trim()) params.set('q', String(q).trim());
     if (from && String(from).trim()) params.set('from', String(from).trim());
     if (to && String(to).trim()) params.set('to', String(to).trim());
+    if (statusId && String(statusId).trim()) params.set('statusId', String(statusId).trim());
     params.set('page', String(page));
     params.set('limit', String(limit));
     return request(`/tickets?${params.toString()}`);

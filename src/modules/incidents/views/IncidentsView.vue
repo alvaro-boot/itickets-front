@@ -1,7 +1,10 @@
 <template>
   <section class="stack">
-    <div class="toolbar">
-      <h2 style="margin: 0; font-size: 1.25rem">Incidentes generales</h2>
+    <div class="page-header">
+      <div class="page-title">
+        <h2>Incidentes generales</h2>
+        <p>Registra, filtra y actualiza incidentes sin salir del flujo operativo.</p>
+      </div>
     </div>
 
     <div class="panel">
@@ -27,14 +30,20 @@
           </select>
         </div>
         <div style="grid-column: 1 / -1">
-          <button class="btn btn-primary" type="submit">Registrar incidente</button>
+          <button class="btn btn-primary" type="submit" :disabled="isSubmitting || isLoading">
+            {{ isSubmitting ? 'Registrando...' : 'Registrar incidente' }}
+          </button>
         </div>
       </form>
     </div>
 
+    <div v-if="isLoading" class="panel">
+      <p class="meta">Cargando incidentes...</p>
+    </div>
+
     <DataTable :rows="incidentRows" :columns="incidentColumns" row-key="id" empty-text="Sin incidentes" :initial-page-size="10">
       <template #cell-status="{ row }">
-        <select :value="row.status" @change="updateStatus(row.id, $event.target.value)">
+        <select :value="row.status" :disabled="updatingId === row.id" @change="updateStatus(row.id, $event.target.value)">
           <option value="OPEN">OPEN</option>
           <option value="IN_PROGRESS">IN_PROGRESS</option>
           <option value="RESOLVED">RESOLVED</option>
@@ -59,6 +68,9 @@ const ui = useUi();
 const { fetchCatalogBundle } = useCatalogs();
 
 const rows = ref([]);
+const isLoading = ref(false);
+const isSubmitting = ref(false);
+const updatingId = ref(null);
 const catalogs = reactive({
   products: [],
   types: [],
@@ -89,6 +101,7 @@ const incidentRows = computed(() =>
 );
 
 async function loadData() {
+  isLoading.value = true;
   try {
     const [incidents, bundle] = await Promise.all([incidentsService.list(), fetchCatalogBundle()]);
     rows.value = incidents || [];
@@ -98,10 +111,14 @@ async function loadData() {
     form.ticketTypeId = catalogs.types[0]?.id || '';
   } catch (error) {
     ui.showToast(error.message || 'No se pudieron cargar incidentes.', true);
+  } finally {
+    isLoading.value = false;
   }
 }
 
 async function createIncident() {
+  if (isSubmitting.value) return;
+  isSubmitting.value = true;
   try {
     await incidentsService.create({
       title: form.title,
@@ -115,16 +132,21 @@ async function createIncident() {
     await loadData();
   } catch (error) {
     ui.showToast(error.message || 'No se pudo registrar el incidente.', true);
+  } finally {
+    isSubmitting.value = false;
   }
 }
 
 async function updateStatus(id, status) {
+  updatingId.value = id;
   try {
     await incidentsService.update(id, { status });
     ui.showToast('Estado de incidente actualizado', false);
     await loadData();
   } catch (error) {
     ui.showToast(error.message || 'No se pudo actualizar el incidente.', true);
+  } finally {
+    updatingId.value = null;
   }
 }
 

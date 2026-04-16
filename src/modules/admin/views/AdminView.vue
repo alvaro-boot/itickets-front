@@ -1,5 +1,16 @@
 <template>
   <section class="stack">
+    <div class="page-header">
+      <div class="page-title">
+        <h2>Administración global</h2>
+        <p>Gestiona empresas, usuarios y módulos con feedback inmediato de cada cambio.</p>
+      </div>
+    </div>
+
+    <div v-if="isLoading" class="panel">
+      <p class="meta">Cargando administración...</p>
+    </div>
+
     <div class="grid-2">
       <div class="panel">
         <h3 style="margin-top: 0">Crear empresa</h3>
@@ -9,7 +20,9 @@
           <label>Codigo</label>
           <input v-model.trim="companyForm.code" required minlength="2" />
           <div style="margin-top: 0.7rem">
-            <button class="btn btn-primary" type="submit">Crear</button>
+            <button class="btn btn-primary" type="submit" :disabled="isCreatingCompany || isLoading">
+              {{ isCreatingCompany ? 'Creando...' : 'Crear' }}
+            </button>
           </div>
         </form>
       </div>
@@ -37,7 +50,9 @@
             <option value="AUX">AUX</option>
           </select>
           <div style="margin-top: 0.7rem">
-            <button class="btn btn-primary" type="submit">Crear usuario</button>
+            <button class="btn btn-primary" type="submit" :disabled="isCreatingUser || isLoading">
+              {{ isCreatingUser ? 'Creando...' : 'Crear usuario' }}
+            </button>
           </div>
         </form>
       </div>
@@ -57,6 +72,7 @@
               <input
                 type="checkbox"
                 :checked="module.isEnabled"
+                :disabled="updatingCompanyId === row.company.id"
                 @change="toggleModule(row.company.id, row.modules, module.moduleCode, $event.target.checked)"
               />
               {{ module.moduleCode }}
@@ -85,6 +101,10 @@ const { invalidateUsersCache } = useUsers();
 const companies = ref([]);
 const permissions = ref([]);
 const companyRows = ref([]);
+const isLoading = ref(false);
+const isCreatingCompany = ref(false);
+const isCreatingUser = ref(false);
+const updatingCompanyId = ref(null);
 
 const companyForm = ref({
   name: '',
@@ -101,6 +121,7 @@ const userForm = ref({
 });
 
 async function loadAdmin() {
+  isLoading.value = true;
   try {
     const [companyList, permissionList] = await Promise.all([adminService.companies(), adminService.permissions()]);
     companies.value = companyList || [];
@@ -114,10 +135,13 @@ async function loadAdmin() {
     );
   } catch (error) {
     ui.showToast(error.message || 'No se pudo cargar administración global.', true);
+  } finally {
+    isLoading.value = false;
   }
 }
 
 async function toggleModule(companyId, modules, changedCode, checked) {
+  updatingCompanyId.value = companyId;
   const enabledModuleCodes = modules
     .filter((module) => (module.moduleCode === changedCode ? checked : module.isEnabled))
     .map((module) => module.moduleCode);
@@ -128,10 +152,14 @@ async function toggleModule(companyId, modules, changedCode, checked) {
     await loadAdmin();
   } catch (error) {
     ui.showToast(error.message || 'No se pudieron actualizar los módulos.', true);
+  } finally {
+    updatingCompanyId.value = null;
   }
 }
 
 async function createCompany() {
+  if (isCreatingCompany.value) return;
+  isCreatingCompany.value = true;
   try {
     await adminService.createCompany(companyForm.value);
     companyForm.value = { name: '', code: '' };
@@ -139,10 +167,14 @@ async function createCompany() {
     await loadAdmin();
   } catch (error) {
     ui.showToast(error.message || 'No se pudo crear la empresa.', true);
+  } finally {
+    isCreatingCompany.value = false;
   }
 }
 
 async function createUser() {
+  if (isCreatingUser.value) return;
+  isCreatingUser.value = true;
   try {
     await adminService.createUser(userForm.value);
     invalidateUsersCache();
@@ -157,6 +189,8 @@ async function createUser() {
     };
   } catch (error) {
     ui.showToast(error.message || 'No se pudo crear el usuario.', true);
+  } finally {
+    isCreatingUser.value = false;
   }
 }
 

@@ -1,7 +1,10 @@
 <template>
   <section class="stack">
-    <div class="toolbar">
-      <h2 style="margin: 0; font-size: 1.25rem">Mis tareas diarias</h2>
+    <div class="page-header">
+      <div class="page-title">
+        <h2>Mis tareas diarias</h2>
+        <p>Organiza el trabajo personal, registra pendientes y marca avances rápido.</p>
+      </div>
     </div>
 
     <div class="panel">
@@ -19,15 +22,21 @@
           <input id="taskDescription" v-model="form.description" />
         </div>
         <div style="grid-column: 1 / -1">
-          <button class="btn btn-primary" type="submit">Registrar tarea</button>
+          <button class="btn btn-primary" type="submit" :disabled="isSubmitting || isLoading">
+            {{ isSubmitting ? 'Registrando...' : 'Registrar tarea' }}
+          </button>
         </div>
       </form>
     </div>
 
+    <div v-if="isLoading" class="panel">
+      <p class="meta">Cargando tareas...</p>
+    </div>
+
     <DataTable :rows="taskRows" :columns="taskColumns" row-key="id" empty-text="No tienes tareas registradas" :initial-page-size="10">
       <template #cell-actionLabel="{ row }">
-        <button class="btn btn-ghost" type="button" @click="toggleTask(row)">
-          {{ row.actionLabel }}
+        <button class="btn btn-ghost" type="button" :disabled="togglingId === row.id" @click="toggleTask(row)">
+          {{ togglingId === row.id ? 'Actualizando...' : row.actionLabel }}
         </button>
       </template>
     </DataTable>
@@ -42,6 +51,9 @@ import DataTable from '../../../shared/components/DataTable.vue';
 
 const ui = useUi();
 const rows = ref([]);
+const isLoading = ref(false);
+const isSubmitting = ref(false);
+const togglingId = ref(null);
 const form = reactive({
   title: '',
   description: '',
@@ -64,14 +76,19 @@ const taskRows = computed(() =>
 );
 
 async function loadTasks() {
+  isLoading.value = true;
   try {
     rows.value = await tasksService.mine();
   } catch (error) {
     ui.showToast(error.message || 'No se pudieron cargar tus tareas.', true);
+  } finally {
+    isLoading.value = false;
   }
 }
 
 async function createTask() {
+  if (isSubmitting.value) return;
+  isSubmitting.value = true;
   try {
     await tasksService.create({
       title: form.title,
@@ -84,15 +101,20 @@ async function createTask() {
     await loadTasks();
   } catch (error) {
     ui.showToast(error.message || 'No se pudo registrar la tarea.', true);
+  } finally {
+    isSubmitting.value = false;
   }
 }
 
 async function toggleTask(task) {
+  togglingId.value = task.id;
   try {
     await tasksService.update(task.id, { isDone: !task.isDone });
     await loadTasks();
   } catch (error) {
     ui.showToast(error.message || 'No se pudo actualizar la tarea.', true);
+  } finally {
+    togglingId.value = null;
   }
 }
 

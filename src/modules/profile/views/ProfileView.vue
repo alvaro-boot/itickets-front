@@ -1,5 +1,17 @@
 <template>
-  <section class="grid-2">
+  <section class="stack">
+    <div class="page-header">
+      <div class="page-title">
+        <h2>Mi perfil</h2>
+        <p>Mantén actualizados tus datos y protege tu acceso con cambios de contraseña.</p>
+      </div>
+    </div>
+
+    <div v-if="isLoading" class="panel">
+      <p class="meta">Cargando perfil...</p>
+    </div>
+
+    <section class="grid-2">
     <div class="panel">
       <h3 style="margin-top: 0">Actualizar información</h3>
       <form class="field-stack" @submit.prevent="saveProfile">
@@ -10,7 +22,9 @@
         <label>Telefono</label>
         <input v-model.trim="profileForm.phone" type="tel" required minlength="7" />
         <div style="margin-top: 0.7rem">
-          <button class="btn btn-primary" type="submit">Guardar datos</button>
+          <button class="btn btn-primary" type="submit" :disabled="isSavingProfile || isLoading">
+            {{ isSavingProfile ? 'Guardando...' : 'Guardar datos' }}
+          </button>
         </div>
       </form>
     </div>
@@ -23,21 +37,27 @@
         <label>Nueva contraseña</label>
         <input v-model="passwordForm.newPassword" type="password" minlength="6" required />
         <div style="margin-top: 0.7rem">
-          <button class="btn btn-primary" type="submit">Cambiar contraseña</button>
+          <button class="btn btn-primary" type="submit" :disabled="isSavingPassword || isLoading">
+            {{ isSavingPassword ? 'Actualizando...' : 'Cambiar contraseña' }}
+          </button>
         </div>
       </form>
     </div>
+    </section>
   </section>
 </template>
 
 <script setup>
-import { onMounted, reactive } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 import { profileService } from '../services/profileService';
 import { useAuth } from '../../../shared/composables/useAuth';
 import { useUi } from '../../../shared/composables/useUi';
 
 const auth = useAuth();
 const ui = useUi();
+const isLoading = ref(false);
+const isSavingProfile = ref(false);
+const isSavingPassword = ref(false);
 
 const profileForm = reactive({
   fullName: '',
@@ -51,6 +71,7 @@ const passwordForm = reactive({
 });
 
 async function loadProfile() {
+  isLoading.value = true;
   try {
     const me = await profileService.me();
     profileForm.fullName = me.fullName || '';
@@ -58,20 +79,28 @@ async function loadProfile() {
     profileForm.phone = me.phone || '';
   } catch (error) {
     ui.showToast(error.message || 'No se pudo cargar tu perfil.', true);
+  } finally {
+    isLoading.value = false;
   }
 }
 
 async function saveProfile() {
+  if (isSavingProfile.value) return;
+  isSavingProfile.value = true;
   try {
     await profileService.updateMyProfile(profileForm);
     await auth.refreshProfile();
     ui.showToast('Perfil actualizado', false);
   } catch (error) {
     ui.showToast(error.message || 'No se pudo actualizar el perfil.', true);
+  } finally {
+    isSavingProfile.value = false;
   }
 }
 
 async function changePassword() {
+  if (isSavingPassword.value) return;
+  isSavingPassword.value = true;
   try {
     await profileService.changeMyPassword(passwordForm);
     passwordForm.currentPassword = '';
@@ -79,6 +108,8 @@ async function changePassword() {
     ui.showToast('Contraseña actualizada', false);
   } catch (error) {
     ui.showToast(error.message || 'No se pudo cambiar la contraseña.', true);
+  } finally {
+    isSavingPassword.value = false;
   }
 }
 

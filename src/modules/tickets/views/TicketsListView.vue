@@ -86,6 +86,16 @@
           <input id="to" type="date" v-model="filters.to" />
         </div>
 
+        <div class="field-stack" style="min-width: 220px">
+          <label for="statusId">Estado</label>
+          <select id="statusId" v-model="filters.statusId">
+            <option value="">Todos</option>
+            <option v-for="status in statuses" :key="status.id" :value="status.id">
+              {{ status.name }}
+            </option>
+          </select>
+        </div>
+
         <div class="actions-row" style="justify-content: flex-end; margin-left: auto; min-width: 220px">
           <button class="btn btn-primary" type="submit">Consultar</button>
           <button class="btn btn-ghost" type="button" @click="clearFilters">Limpiar</button>
@@ -195,20 +205,24 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { ticketsService } from '../services/ticketsService';
+import { useCatalogs } from '../../../shared/composables/useCatalogs';
 import { useAuth } from '../../../shared/composables/useAuth';
 import { useUi } from '../../../shared/composables/useUi';
 import { fmtDate, priorityClass } from '../../../shared/utils/format';
 
 const auth = useAuth();
 const ui = useUi();
+const { fetchCatalogBundle } = useCatalogs();
 
 const loading = ref(false);
 const query = ref('');
 const filters = reactive({
   from: '',
   to: '',
+  statusId: '',
 });
 const rows = ref([]);
+const statuses = ref([]);
 const activeTab = ref('all');
 const page = ref(1);
 const limit = ref(50);
@@ -229,10 +243,16 @@ function isClosedTicket(ticket) {
 
 function filteredByTab(tab) {
   const meId = auth.state.profile?.id ? String(auth.state.profile.id) : null;
-  if (tab === 'mine') return rows.value.filter((ticket) => String(ticket.assigneeId || '') === meId);
-  if (tab === 'unassigned') return rows.value.filter((ticket) => ticket.assigneeId == null || String(ticket.assigneeId) === '');
+  if (tab === 'mine') {
+    return rows.value.filter((ticket) => String(ticket.assigneeId || '') === meId && !isClosedTicket(ticket));
+  }
+  if (tab === 'unassigned') {
+    return rows.value.filter(
+      (ticket) => (ticket.assigneeId == null || String(ticket.assigneeId) === '') && !isClosedTicket(ticket),
+    );
+  }
   if (tab === 'closed') return rows.value.filter(isClosedTicket);
-  return rows.value;
+  return rows.value.filter((ticket) => !isClosedTicket(ticket));
 }
 
 const visibleRows = computed(() => filteredByTab(activeTab.value));
@@ -245,6 +265,7 @@ async function loadTickets() {
       q: query.value,
       from: filters.from,
       to: filters.to,
+      statusId: filters.statusId,
       page: page.value,
       limit: limit.value,
     });
@@ -266,6 +287,7 @@ function clearFilters() {
   query.value = '';
   filters.from = '';
   filters.to = '';
+  filters.statusId = '';
   page.value = 1;
   loadTickets();
 }
@@ -308,5 +330,13 @@ function nextPage() {
   loadTickets();
 }
 
-onMounted(loadTickets);
+onMounted(async () => {
+  try {
+    const bundle = await fetchCatalogBundle();
+    statuses.value = bundle?.statuses || [];
+  } catch {
+    statuses.value = [];
+  }
+  await loadTickets();
+});
 </script>

@@ -413,24 +413,26 @@ function syncForm() {
   nextTick(() => setEditorHtml(form.description || ''));
 }
 
-function applyTicketSnapshot(snapshot) {
+function mergeTicketSnapshot(snapshot) {
   if (!snapshot) return;
-  ticket.value = snapshot;
+  if (!ticket.value) {
+    ticket.value = snapshot;
+    syncForm();
+    return;
+  }
+  ticket.value = {
+    ...ticket.value,
+    ...snapshot,
+    comments: snapshot.comments ?? ticket.value.comments ?? [],
+    events: snapshot.events ?? ticket.value.events ?? [],
+    worklogs: snapshot.worklogs ?? ticket.value.worklogs ?? [],
+  };
   syncForm();
 }
 
-function applyCommentSnapshot(snapshot) {
-  if (!snapshot || !ticket.value) return;
-  // Actualiza solo las secciones dinámicas para evitar sensación de "recarga total".
-  ticket.value = {
-    ...ticket.value,
-    comments: snapshot.comments || [],
-    events: snapshot.events || [],
-    worklogs: snapshot.worklogs || [],
-    totalLoggedMinutes: snapshot.totalLoggedMinutes ?? ticket.value.totalLoggedMinutes,
-    totalLoggedHours: snapshot.totalLoggedHours ?? ticket.value.totalLoggedHours,
-    updatedAt: snapshot.updatedAt ?? ticket.value.updatedAt,
-  };
+async function refreshTicketDataSoft() {
+  const fullSnapshot = await ticketsService.get(route.params.id);
+  mergeTicketSnapshot(fullSnapshot);
 }
 
 async function loadTicket() {
@@ -470,8 +472,8 @@ async function saveTicket() {
   isSaving.value = true;
   try {
     const assigneeId = form.assigneeId || null;
-    let snapshot = await ticketsService.reassign(route.params.id, { assigneeId });
-    snapshot = await ticketsService.update(route.params.id, {
+    await ticketsService.reassign(route.params.id, { assigneeId });
+    await ticketsService.update(route.params.id, {
       title: form.title,
       description: form.description,
       statusId: form.statusId,
@@ -484,7 +486,7 @@ async function saveTicket() {
     if (showWorklogs.value) {
       const minutes = Number(worklog.minutesSpent);
       if (!Number.isNaN(minutes) && minutes > 0) {
-        snapshot = await ticketsService.addWorklog(route.params.id, {
+        await ticketsService.addWorklog(route.params.id, {
           minutesSpent: minutes,
           note: worklog.note || undefined,
         });
@@ -493,7 +495,7 @@ async function saveTicket() {
       }
     }
 
-    applyTicketSnapshot(snapshot);
+    await refreshTicketDataSoft();
     ui.showToast('Cambios guardados.', false);
   } catch (error) {
     ui.showToast(error.message || 'No se pudo guardar el ticket.', true);
@@ -541,12 +543,12 @@ async function addComment() {
   }
   commentBody.value = '';
   try {
-    const snapshot = await ticketsService.comment(route.params.id, { body });
-    applyCommentSnapshot(snapshot);
+    await ticketsService.comment(route.params.id, { body });
+    await refreshTicketDataSoft();
   } catch (error) {
     // Si falla, vuelve al estado completo del servidor sin recargar toda la vista.
     const fallback = await ticketsService.get(route.params.id).catch(() => null);
-    if (fallback) applyCommentSnapshot(fallback);
+    if (fallback) mergeTicketSnapshot(fallback);
     ui.showToast(error.message || 'No se pudo registrar el comentario.', true);
   } finally {
     isCommenting.value = false;
