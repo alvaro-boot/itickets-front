@@ -50,8 +50,8 @@ body {
 }
 
 .topbar {
-  position: sticky;
-  top: 1rem;
+  position: relative;
+  top: 0;
   z-index: 12;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: linear-gradient(180deg, rgba(18, 27, 43, 0.88), rgba(12, 18, 32, 0.8));
@@ -1234,9 +1234,9 @@ tbody tr:hover {
 }
 
 .comment-composer {
-  position: sticky;
-  top: 0.5rem;
-  z-index: 2;
+  position: relative;
+  top: 0;
+  z-index: 1;
   border-radius: 16px;
   padding: 0.9rem;
   background: linear-gradient(180deg, rgba(18, 27, 43, 0.94), rgba(12, 18, 32, 0.92));
