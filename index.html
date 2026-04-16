@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ITickets</title>
     <script>
-      window.__TICKETS_API_BASE__ = window.__TICKETS_API_BASE__ || 'https://itickets-ru1k.vercel.app';
+      const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+      window.__TICKETS_API_BASE__ = window.__TICKETS_API_BASE__ || (isLocal ? 'http://localhost:3000' : 'https://itickets-ru1k.vercel.app');
     </script>
   </head>
   <body>

@@ -254,7 +254,30 @@
                     <strong>{{ comment.author?.fullName || 'Usuario' }}</strong>
                     <span>{{ fmtDate(comment.createdAt) }}</span>
                   </div>
-                  <p>{{ comment.body }}</p>
+                  <p>{{ commentText(comment.body) }}</p>
+                  <div v-if="extractAttachments(comment.body).length" class="stack" style="margin-top: 0.5rem">
+                    <article
+                      v-for="attachment in extractAttachments(comment.body)"
+                      :key="attachment.url"
+                      class="panel"
+                      style="padding: 0.6rem"
+                    >
+                      <img
+                        v-if="attachment.isImage"
+                        :src="attachment.url"
+                        alt="Imagen adjunta"
+                        style="max-width: 100%; border-radius: 10px; margin-bottom: 0.5rem"
+                      />
+                      <div class="actions-row" style="justify-content: space-between">
+                        <a class="btn btn-ghost" :href="attachment.url" target="_blank" rel="noopener noreferrer">
+                          Ver
+                        </a>
+                        <a class="btn btn-primary" :href="attachment.url" download>
+                          Descargar
+                        </a>
+                      </div>
+                    </article>
+                  </div>
                 </div>
               </div>
             </div>
@@ -356,6 +379,23 @@ function toEditableHtml(value) {
     .split(/\n{2,}/)
     .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, '<br>')}</p>`)
     .join('');
+}
+
+function extractAttachments(body) {
+  const text = String(body || '');
+  const matches = text.match(/https?:\/\/[^\s)]+/g) || [];
+  return matches.map((url) => {
+    const lower = url.toLowerCase();
+    const isImage =
+      lower.includes('/imagenes/') ||
+      /\.(png|jpe?g|gif|webp|svg|bmp)(\?|#|$)/i.test(lower) ||
+      /[?&](format|ext)=(png|jpg|jpeg|gif|webp|svg|bmp)/i.test(lower);
+    return { url, isImage };
+  });
+}
+
+function commentText(body) {
+  return String(body || '').replace(/https?:\/\/[^\s)]+/g, '').trim() || 'Adjunto sin texto';
 }
 
 function setEditorHtml(html) {
