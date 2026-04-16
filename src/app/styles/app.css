@@ -1052,6 +1052,9 @@ tbody tr:hover {
   margin: 0.45rem 0 0;
   color: #dbe6fb;
   line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .comment-composer {
