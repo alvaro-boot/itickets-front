@@ -66,7 +66,7 @@
       </div>
 
       <form class="search-panel__row" @submit.prevent="applyFilters">
-        <div class="field-stack search-panel__input">
+        <div class="field-stack search-panel__field search-panel__field--query">
           <label for="ticket-search">Buscar ticket</label>
           <input
             id="ticket-search"
@@ -76,17 +76,17 @@
           />
         </div>
 
-        <div class="field-stack" style="min-width: 190px">
+        <div class="field-stack search-panel__field">
           <label for="from">Desde</label>
           <input id="from" type="date" v-model="filters.from" />
         </div>
 
-        <div class="field-stack" style="min-width: 190px">
+        <div class="field-stack search-panel__field">
           <label for="to">Hasta</label>
           <input id="to" type="date" v-model="filters.to" />
         </div>
 
-        <div class="field-stack" style="min-width: 220px">
+        <div class="field-stack search-panel__field">
           <label for="statusId">Estado</label>
           <select id="statusId" v-model="filters.statusId">
             <option value="">Todos</option>
@@ -96,9 +96,9 @@
           </select>
         </div>
 
-        <div class="actions-row" style="justify-content: flex-end; margin-left: auto; min-width: 220px">
-          <button class="btn btn-primary" type="submit">Consultar</button>
-          <button class="btn btn-ghost" type="button" @click="clearFilters">Limpiar</button>
+        <div class="actions-row search-panel__actions">
+          <button class="btn btn-primary search-panel__btn" type="submit">Consultar</button>
+          <button class="btn btn-ghost search-panel__btn" type="button" @click="clearFilters">Limpiar</button>
         </div>
       </form>
     </div>
