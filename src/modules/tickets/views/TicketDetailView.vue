@@ -22,11 +22,11 @@
         <div class="ticket-overview-card__main">
           <p class="spotlight-card__eyebrow">Resumen del caso</p>
           <h3 class="ticket-overview-card__title">{{ ticket.title }}</h3>
-          <div
-            v-if="sanitizedDescription"
+          <RichHtmlDisplay
+            v-if="ticket.description && String(ticket.description).trim()"
             class="ticket-overview-card__copy"
-            v-html="sanitizedDescription"
-          ></div>
+            :html="ticket.description"
+          />
           <p v-else class="ticket-overview-card__copy">Este ticket aún no tiene una descripción detallada.</p>
         </div>
         <div class="ticket-overview-card__side">
@@ -73,22 +73,7 @@
                 </div>
                 <div class="field-stack" style="grid-column: 1 / -1">
                   <label for="description">Descripción</label>
-                  <div class="actions-row" style="margin-bottom: 0.45rem">
-                    <button class="btn btn-ghost" type="button" @click="execRich('bold')"><strong>B</strong></button>
-                    <button class="btn btn-ghost" type="button" @click="execRich('italic')"><em>I</em></button>
-                    <button class="btn btn-ghost" type="button" @click="execRich('underline')"><u>U</u></button>
-                    <button class="btn btn-ghost" type="button" @click="execRich('insertUnorderedList')">Lista</button>
-                    <button class="btn btn-ghost" type="button" @click="insertLink">Link</button>
-                    <button class="btn btn-ghost" type="button" @click="execRich('removeFormat')">Limpiar</button>
-                  </div>
-                  <div
-                    id="description"
-                    ref="descriptionEditor"
-                    class="rich-editor"
-                    contenteditable="true"
-                    @input="onEditorInput"
-                    @blur="onEditorInput"
-                  ></div>
+                  <RichTextEditor id="description" v-model="form.description" />
                 </div>
                 <div class="field-stack">
                   <label for="statusId">Estado</label>
@@ -221,14 +206,13 @@
             <form class="ticket-inline-form comment-composer" @submit.prevent="addComment">
               <div class="field-stack">
                 <label for="body">Nuevo comentario</label>
-                <textarea
+                <RichTextEditor
                   id="body"
                   v-model="commentBody"
-                  required
-                  minlength="1"
+                  compact
                   placeholder="Escribe una actualización..."
                   :disabled="isBusy"
-                ></textarea>
+                />
               </div>
               <div class="actions-row" style="justify-content: space-between">
                 <input ref="commentFileInput" type="file" :disabled="isBusy" />
@@ -254,7 +238,12 @@
                     <strong>{{ comment.author?.fullName || 'Usuario' }}</strong>
                     <span>{{ fmtDate(comment.createdAt) }}</span>
                   </div>
-                  <p>{{ commentText(comment.body) }}</p>
+                  <RichHtmlDisplay
+                    v-if="stripUrlsForDisplay(comment.body)"
+                    class="comment-rich-body"
+                    :html="stripUrlsForDisplay(comment.body)"
+                  />
+                  <p v-else class="meta">Adjunto sin texto</p>
                   <div v-if="extractAttachments(comment.body).length" class="stack" style="margin-top: 0.5rem">
                     <article
                       v-for="attachment in extractAttachments(comment.body)"
@@ -289,7 +278,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { ticketsService } from '../services/ticketsService';
 import { useCatalogs } from '../../../shared/composables/useCatalogs';
@@ -297,6 +286,9 @@ import { useUsers } from '../../../shared/composables/useUsers';
 import { useUi } from '../../../shared/composables/useUi';
 import { uploadsService } from '../../../shared/services/uploadsService';
 import { eventText, fmtDate } from '../../../shared/utils/format';
+import RichHtmlDisplay from '../../../shared/components/RichHtmlDisplay.vue';
+import RichTextEditor from '../../../shared/components/RichTextEditor.vue';
+import { isRichHtmlEmpty, stripUrlsForDisplay } from '../../../shared/utils/richHtml';
 
 const route = useRoute();
 const router = useRouter();
@@ -306,7 +298,6 @@ const { fetchUsersList } = useUsers();
 
 const loading = ref(false);
 const ticket = ref(null);
-const descriptionEditor = ref(null);
 const assignableUsers = ref([]);
 const commentBody = ref('');
 const commentFileInput = ref(null);
@@ -333,54 +324,6 @@ const form = reactive({
   assigneeId: '',
 });
 
-function sanitizeRichHtml(input) {
-  if (!input) return '';
-  const template = document.createElement('template');
-  template.innerHTML = String(input);
-  const allowedTags = new Set(['P', 'BR', 'STRONG', 'B', 'EM', 'I', 'U', 'UL', 'OL', 'LI', 'A']);
-  template.content.querySelectorAll('*').forEach((node) => {
-    if (!allowedTags.has(node.tagName)) {
-      node.replaceWith(document.createTextNode(node.textContent || ''));
-      return;
-    }
-    [...node.attributes].forEach((attr) => {
-      const name = attr.name.toLowerCase();
-      const isLinkAttr = node.tagName === 'A' && (name === 'href' || name === 'target' || name === 'rel');
-      if (!isLinkAttr) node.removeAttribute(attr.name);
-      if (name === 'href' && /^(javascript|data):/i.test(String(attr.value || '').trim())) {
-        node.removeAttribute('href');
-      }
-    });
-    if (node.tagName === 'A') {
-      node.setAttribute('target', '_blank');
-      node.setAttribute('rel', 'noopener noreferrer');
-    }
-  });
-  return template.innerHTML;
-}
-
-const sanitizedDescription = computed(() => sanitizeRichHtml(ticket.value?.description || ''));
-
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
-
-function toEditableHtml(value) {
-  const sanitized = sanitizeRichHtml(value || '');
-  if (sanitized.trim()) return sanitized;
-  const plain = String(value || '').trim();
-  if (!plain) return '';
-  return plain
-    .split(/\n{2,}/)
-    .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, '<br>')}</p>`)
-    .join('');
-}
-
 function extractAttachments(body) {
   const text = String(body || '');
   const matches = text.match(/https?:\/\/[^\s)]+/g) || [];
@@ -392,33 +335,6 @@ function extractAttachments(body) {
       /[?&](format|ext)=(png|jpg|jpeg|gif|webp|svg|bmp)/i.test(lower);
     return { url, isImage };
   });
-}
-
-function commentText(body) {
-  return String(body || '').replace(/https?:\/\/[^\s)]+/g, '').trim() || 'Adjunto sin texto';
-}
-
-function setEditorHtml(html) {
-  if (!descriptionEditor.value) return;
-  descriptionEditor.value.innerHTML = toEditableHtml(html || '');
-}
-
-function onEditorInput() {
-  form.description = sanitizeRichHtml(descriptionEditor.value?.innerHTML || '');
-}
-
-function execRich(command) {
-  descriptionEditor.value?.focus();
-  document.execCommand(command, false);
-  onEditorInput();
-}
-
-function insertLink() {
-  const url = window.prompt('Ingresa la URL (https://...)');
-  if (!url) return;
-  descriptionEditor.value?.focus();
-  document.execCommand('createLink', false, String(url).trim());
-  onEditorInput();
 }
 
 const selectedStatusName = computed(
@@ -478,7 +394,6 @@ function syncForm() {
   form.productId = ticket.value.productId || '';
   form.ticketTypeId = ticket.value.ticketTypeId || '';
   form.assigneeId = ticket.value.assigneeId == null ? '' : String(ticket.value.assigneeId);
-  nextTick(() => setEditorHtml(form.description || ''));
 }
 
 function mergeTicketSnapshot(snapshot) {
@@ -593,7 +508,10 @@ async function duplicateTicket() {
 async function addComment() {
   if (isBusy.value) return;
   const body = String(commentBody.value || '').trim();
-  if (!body) return;
+  if (!body || isRichHtmlEmpty(body)) {
+    ui.showToast('Escribe un comentario con contenido.', true);
+    return;
+  }
   isCommenting.value = true;
   const optimisticId = `tmp-${Date.now()}`;
   if (ticket.value) {
