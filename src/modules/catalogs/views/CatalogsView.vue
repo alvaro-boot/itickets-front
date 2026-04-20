@@ -3,7 +3,7 @@
     <div class="page-header">
       <div class="page-title">
         <h2>Catálogos</h2>
-        <p>Administra productos y tipos con una experiencia más clara y consistente.</p>
+        <p>Administra productos, tipos y áreas con una experiencia más clara y consistente.</p>
       </div>
     </div>
 
@@ -39,6 +39,21 @@
       </div>
     </div>
 
+    <div class="panel">
+      <h3 style="margin-top: 0">Registrar área</h3>
+      <form class="field-stack" @submit.prevent="createArea">
+        <label for="areaName">Nombre</label>
+        <input id="areaName" v-model.trim="areaForm.name" minlength="2" required />
+        <label for="areaCode">Codigo (opcional)</label>
+        <input id="areaCode" v-model.trim="areaForm.code" placeholder="Se genera automáticamente si lo dejas vacío" />
+        <div style="margin-top: 0.7rem">
+          <button class="btn btn-primary" type="submit" :disabled="isSavingArea || isLoading">
+            {{ isSavingArea ? 'Guardando...' : 'Guardar área' }}
+          </button>
+        </div>
+      </form>
+    </div>
+
     <div v-if="isLoading" class="panel">
       <p class="meta">Cargando catálogos...</p>
     </div>
@@ -53,6 +68,11 @@
         <h3 style="margin-top: 0">Tipos registrados</h3>
         <DataTable :rows="types" :columns="catalogColumns" row-key="id" empty-text="Sin tipos" :initial-page-size="10" />
       </div>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top: 0">Áreas registradas</h3>
+      <DataTable :rows="areas" :columns="catalogColumns" row-key="id" empty-text="Sin áreas" :initial-page-size="10" />
     </div>
   </section>
 </template>
@@ -70,11 +90,14 @@ const { invalidateCatalogBundle } = useCatalogs();
 
 const products = ref([]);
 const types = ref([]);
+const areas = ref([]);
 const isLoading = ref(false);
 const isSavingProduct = ref(false);
 const isSavingType = ref(false);
+const isSavingArea = ref(false);
 const productForm = ref({ name: '', code: '' });
 const typeForm = ref({ name: '', code: '' });
+const areaForm = ref({ name: '', code: '' });
 const catalogColumns = [
   { key: 'code', label: 'Codigo' },
   { key: 'name', label: 'Nombre' },
@@ -83,9 +106,14 @@ const catalogColumns = [
 async function loadCatalogs() {
   isLoading.value = true;
   try {
-    const [productRows, typeRows] = await Promise.all([catalogsService.products(), catalogsService.types()]);
+    const [productRows, typeRows, areaRows] = await Promise.all([
+      catalogsService.products(),
+      catalogsService.types(),
+      catalogsService.areas(),
+    ]);
     products.value = productRows || [];
     types.value = typeRows || [];
+    areas.value = areaRows || [];
   } catch (error) {
     ui.showToast(error.message || 'No se pudieron cargar catalogos.', true);
   } finally {
@@ -128,6 +156,25 @@ async function createType() {
     ui.showToast(error.message || 'No se pudo registrar el tipo.', true);
   } finally {
     isSavingType.value = false;
+  }
+}
+
+async function createArea() {
+  if (isSavingArea.value) return;
+  isSavingArea.value = true;
+  try {
+    await catalogsService.createArea({
+      name: areaForm.value.name,
+      code: areaForm.value.code || slugifyCode(areaForm.value.name) || undefined,
+    });
+    areaForm.value = { name: '', code: '' };
+    invalidateCatalogBundle();
+    ui.showToast('Área registrada', false);
+    await loadCatalogs();
+  } catch (error) {
+    ui.showToast(error.message || 'No se pudo registrar el área.', true);
+  } finally {
+    isSavingArea.value = false;
   }
 }
 

@@ -101,6 +101,21 @@
                     <option v-for="type in catalogs.types" :key="type.id" :value="type.id">{{ type.name }}</option>
                   </select>
                 </div>
+                <div class="field-stack">
+                  <label for="areaId">Área solicitante</label>
+                  <select id="areaId" v-model="form.areaId">
+                    <option value="">— Sin área —</option>
+                    <option v-for="area in catalogs.areas" :key="area.id" :value="area.id">{{ area.name }}</option>
+                  </select>
+                </div>
+                <div class="field-stack">
+                  <label for="requesterName">Nombre de quien solicita</label>
+                  <input
+                    id="requesterName"
+                    v-model.trim="form.requesterName"
+                    placeholder="Nombre completo del solicitante"
+                  />
+                </div>
                 <div class="field-stack" style="grid-column: 1 / -1">
                   <label for="assigneeId">Asignado a</label>
                   <select id="assigneeId" v-model="form.assigneeId">
@@ -313,6 +328,7 @@ const catalogs = reactive({
   priorities: [],
   products: [],
   types: [],
+  areas: [],
 });
 const form = reactive({
   title: '',
@@ -321,6 +337,8 @@ const form = reactive({
   priorityId: '',
   productId: '',
   ticketTypeId: '',
+  areaId: '',
+  requesterName: '',
   assigneeId: '',
 });
 
@@ -393,6 +411,8 @@ function syncForm() {
   form.priorityId = ticket.value.priorityId || '';
   form.productId = ticket.value.productId || '';
   form.ticketTypeId = ticket.value.ticketTypeId || '';
+  form.areaId = ticket.value.areaId || '';
+  form.requesterName = ticket.value.requesterName || '';
   form.assigneeId = ticket.value.assigneeId == null ? '' : String(ticket.value.assigneeId);
 }
 
@@ -463,6 +483,8 @@ async function saveTicket() {
       priorityId: form.priorityId,
       productId: form.productId,
       ticketTypeId: form.ticketTypeId,
+      areaId: form.areaId || null,
+      requesterName: form.requesterName || null,
     });
 
     // Registrar tiempo "en el mismo guardado" cuando el ticket está cerrado y el usuario ingresa minutos.

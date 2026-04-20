@@ -69,6 +69,22 @@
                 <option v-for="type in catalogs.types" :key="type.id" :value="type.id">{{ type.name }}</option>
               </select>
             </div>
+            <div class="field-stack">
+              <label for="areaId">Área solicitante</label>
+              <select id="areaId" v-model="form.areaId" required>
+                <option v-for="area in catalogs.areas" :key="area.id" :value="area.id">{{ area.name }}</option>
+              </select>
+            </div>
+            <div class="field-stack">
+              <label for="requesterName">Nombre de quien solicita</label>
+              <input
+                id="requesterName"
+                v-model.trim="form.requesterName"
+                required
+                minlength="2"
+                placeholder="Nombre completo del solicitante"
+              />
+            </div>
             <div class="field-stack" style="grid-column: 1 / -1">
               <label for="assigneeId">Asignar a (opcional)</label>
               <select id="assigneeId" v-model="form.assigneeId" :disabled="users.length === 0">
@@ -143,6 +159,7 @@ const catalogs = reactive({
   priorities: [],
   products: [],
   types: [],
+  areas: [],
 });
 
 const users = ref([]);
@@ -154,6 +171,8 @@ const form = reactive({
   priorityId: '',
   productId: '',
   ticketTypeId: '',
+  areaId: '',
+  requesterName: '',
   assigneeId: '',
 });
 
@@ -166,6 +185,7 @@ async function loadData() {
     form.priorityId = catalogBundle.priorities?.[0]?.id || '';
     form.productId = catalogBundle.products?.[0]?.id || '';
     form.ticketTypeId = catalogBundle.types?.[0]?.id || '';
+    form.areaId = catalogBundle.areas?.[0]?.id || '';
   } catch (error) {
     ui.showToast(error.message || 'No se pudieron cargar catálogos.', true);
   }
@@ -180,6 +200,8 @@ async function submit() {
       priorityId: form.priorityId || undefined,
       productId: form.productId,
       ticketTypeId: form.ticketTypeId,
+      areaId: form.areaId,
+      requesterName: form.requesterName,
       assigneeId: form.assigneeId || undefined,
     });
     const files = Array.from(attachmentsInput.value?.files || []);

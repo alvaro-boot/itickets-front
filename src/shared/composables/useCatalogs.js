@@ -7,13 +7,14 @@ const state = reactive({
 
 async function fetchCatalogBundle(force = false) {
   if (state.bundle && !force) return state.bundle;
-  const [statuses, priorities, products, types] = await Promise.all([
+  const [statuses, priorities, products, types, areas] = await Promise.all([
     catalogsService.statuses(),
     catalogsService.priorities(),
     catalogsService.products(),
     catalogsService.types(),
+    catalogsService.areas(),
   ]);
-  state.bundle = { statuses, priorities, products, types };
+  state.bundle = { statuses, priorities, products, types, areas };
   return state.bundle;
 }
 
