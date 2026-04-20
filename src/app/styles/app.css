@@ -40,6 +40,12 @@ body {
   position: relative;
 }
 
+.shell-frame {
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: 0 0.9rem 1rem;
+}
+
 .topbar,
 .panel,
 .card,
@@ -55,10 +61,26 @@ body {
   z-index: 12;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: linear-gradient(180deg, rgba(18, 27, 43, 0.88), rgba(12, 18, 32, 0.8));
+  border-radius: 18px;
+  padding: 0.65rem 0.8rem;
 }
 
 .content {
   align-content: start;
+}
+
+.shell-layout {
+  margin-top: 0.9rem;
+}
+
+.content-shell {
+  display: grid;
+  gap: 1rem;
+}
+
+.content-scroll {
+  display: grid;
+  gap: 1rem;
 }
 
 .hero {
@@ -69,6 +91,10 @@ body {
   background:
     radial-gradient(circle at top left, rgba(91, 140, 255, 0.3), transparent 40%),
     linear-gradient(135deg, rgba(79, 114, 255, 0.16), rgba(134, 93, 255, 0.12) 58%, rgba(31, 45, 69, 0.45));
+}
+
+.page-hero {
+  border-radius: 20px;
 }
 
 .hero::after {
@@ -872,6 +898,14 @@ textarea:focus {
     linear-gradient(160deg, rgba(16, 27, 44, 0.9), rgba(10, 17, 30, 0.92));
 }
 
+.topbar-quick-action {
+  white-space: nowrap;
+}
+
+.sidebar .meta {
+  margin-top: 0.2rem;
+}
+
 .search-panel__row {
   display: grid;
   gap: 0.9rem;
@@ -1209,6 +1243,20 @@ tbody tr:hover {
   min-width: 0;
 }
 
+.ticket-workspace {
+  display: grid;
+  gap: 1rem;
+}
+
+.ticket-sticky-actions {
+  position: sticky;
+  bottom: 0.2rem;
+  padding: 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(11, 18, 31, 0.96), rgba(9, 15, 25, 0.94));
+}
+
 .ticket-panel {
   border-radius: 22px;
 }
@@ -1314,6 +1362,11 @@ tbody tr:hover {
 
 .comment-composer .btn {
   width: 100%;
+}
+
+.ticket-tab--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .comment-timeline {

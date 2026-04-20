@@ -7,6 +7,24 @@
       </div>
     </div>
 
+    <div class="stats-grid">
+      <article class="stat-card">
+        <p class="stat-card__label">Total incidentes</p>
+        <p class="stat-card__value">{{ rows.length }}</p>
+        <p class="stat-card__hint">Casos registrados en el módulo</p>
+      </article>
+      <article class="stat-card">
+        <p class="stat-card__label">Abiertos</p>
+        <p class="stat-card__value">{{ openCount }}</p>
+        <p class="stat-card__hint">Pendientes de gestión</p>
+      </article>
+      <article class="stat-card">
+        <p class="stat-card__label">Resueltos</p>
+        <p class="stat-card__value">{{ resolvedCount }}</p>
+        <p class="stat-card__hint">Con estado final</p>
+      </article>
+    </div>
+
     <div class="panel">
       <form class="grid-2" @submit.prevent="createIncident">
         <div class="field-stack" style="grid-column: 1 / -1">
@@ -41,18 +59,26 @@
       <p class="meta">Cargando incidentes...</p>
     </div>
 
-    <DataTable :rows="incidentRows" :columns="incidentColumns" row-key="id" empty-text="Sin incidentes" :initial-page-size="10">
-      <template #cell-status="{ row }">
-        <select :value="row.status" :disabled="updatingId === row.id" @change="updateStatus(row.id, $event.target.value)">
-          <option value="OPEN">OPEN</option>
-          <option value="IN_PROGRESS">IN_PROGRESS</option>
-          <option value="RESOLVED">RESOLVED</option>
-        </select>
-      </template>
-      <template #cell-updatedAt="{ row }">
-        <span class="meta">{{ fmtDate(row.updatedAt) }}</span>
-      </template>
-    </DataTable>
+    <div class="panel">
+      <div class="panel-header">
+        <div class="page-title">
+          <h2 style="font-size: 1.05rem">Listado de incidentes</h2>
+          <p>Consulta y actualiza estado con una sola tabla operativa.</p>
+        </div>
+      </div>
+      <DataTable :rows="incidentRows" :columns="incidentColumns" row-key="id" empty-text="Sin incidentes" :initial-page-size="10">
+        <template #cell-status="{ row }">
+          <select :value="row.status" :disabled="updatingId === row.id" @change="updateStatus(row.id, $event.target.value)">
+            <option value="OPEN">OPEN</option>
+            <option value="IN_PROGRESS">IN_PROGRESS</option>
+            <option value="RESOLVED">RESOLVED</option>
+          </select>
+        </template>
+        <template #cell-updatedAt="{ row }">
+          <span class="meta">{{ fmtDate(row.updatedAt) }}</span>
+        </template>
+      </DataTable>
+    </div>
   </section>
 </template>
 
@@ -99,6 +125,8 @@ const incidentRows = computed(() =>
     createdByName: incident.createdBy?.fullName || incident.createdBy?.email || '',
   })),
 );
+const openCount = computed(() => rows.value.filter((incident) => incident.status === 'OPEN').length);
+const resolvedCount = computed(() => rows.value.filter((incident) => incident.status === 'RESOLVED').length);
 
 async function loadData() {
   isLoading.value = true;

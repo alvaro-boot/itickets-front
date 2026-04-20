@@ -7,6 +7,24 @@
       </div>
     </div>
 
+    <div class="stats-grid">
+      <article class="stat-card">
+        <p class="stat-card__label">Total</p>
+        <p class="stat-card__value">{{ rows.length }}</p>
+        <p class="stat-card__hint">Tareas del periodo visible</p>
+      </article>
+      <article class="stat-card">
+        <p class="stat-card__label">Pendientes</p>
+        <p class="stat-card__value">{{ pendingCount }}</p>
+        <p class="stat-card__hint">Requieren acción</p>
+      </article>
+      <article class="stat-card">
+        <p class="stat-card__label">Completadas</p>
+        <p class="stat-card__value">{{ doneCount }}</p>
+        <p class="stat-card__hint">Cerradas exitosamente</p>
+      </article>
+    </div>
+
     <div class="panel">
       <form class="grid-2" @submit.prevent="createTask">
         <div class="field-stack" style="grid-column: 1 / -1">
@@ -33,13 +51,21 @@
       <p class="meta">Cargando tareas...</p>
     </div>
 
-    <DataTable :rows="taskRows" :columns="taskColumns" row-key="id" empty-text="No tienes tareas registradas" :initial-page-size="10">
-      <template #cell-actionLabel="{ row }">
-        <button class="btn btn-ghost" type="button" :disabled="togglingId === row.id" @click="toggleTask(row)">
-          {{ togglingId === row.id ? 'Actualizando...' : row.actionLabel }}
-        </button>
-      </template>
-    </DataTable>
+    <div class="panel">
+      <div class="panel-header">
+        <div class="page-title">
+          <h2 style="font-size: 1.05rem">Tablero de tareas</h2>
+          <p>Actualiza estado y da seguimiento rápido a tus pendientes.</p>
+        </div>
+      </div>
+      <DataTable :rows="taskRows" :columns="taskColumns" row-key="id" empty-text="No tienes tareas registradas" :initial-page-size="10">
+        <template #cell-actionLabel="{ row }">
+          <button class="btn btn-ghost" type="button" :disabled="togglingId === row.id" @click="toggleTask(row)">
+            {{ togglingId === row.id ? 'Actualizando...' : row.actionLabel }}
+          </button>
+        </template>
+      </DataTable>
+    </div>
   </section>
 </template>
 
@@ -74,6 +100,8 @@ const taskRows = computed(() =>
     actionLabel: task.isDone ? 'Reabrir' : 'Completar',
   })),
 );
+const pendingCount = computed(() => rows.value.filter((task) => !task.isDone).length);
+const doneCount = computed(() => rows.value.filter((task) => task.isDone).length);
 
 async function loadTasks() {
   isLoading.value = true;

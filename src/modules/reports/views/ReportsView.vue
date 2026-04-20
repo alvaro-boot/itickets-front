@@ -7,7 +7,7 @@
       </div>
     </div>
 
-    <div class="panel">
+    <div class="panel search-panel">
       <form class="grid-2" @submit.prevent="loadReports">
         <div class="field-stack">
           <label for="from">Desde</label>
@@ -111,54 +111,72 @@
     </div>
 
     <div class="grid-2">
+      <div class="panel">
+        <h3 style="margin: 0 0 0.6rem">Distribución por producto</h3>
+        <DataTable
+          :rows="productRows"
+          :columns="dimensionColumns"
+          row-key="rowKey"
+          empty-text="Sin datos por producto"
+          :initial-page-size="10"
+        />
+      </div>
+      <div class="panel">
+        <h3 style="margin: 0 0 0.6rem">Distribución por tipo</h3>
+        <DataTable
+          :rows="typeRows"
+          :columns="dimensionColumns"
+          row-key="rowKey"
+          empty-text="Sin datos por tipo"
+          :initial-page-size="10"
+        />
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin: 0 0 0.6rem">Distribución por estado</h3>
       <DataTable
-        :rows="productRows"
-        :columns="dimensionColumns"
+        :rows="statusRows"
+        :columns="statusColumns"
         row-key="rowKey"
-        empty-text="Sin datos por producto"
-        :initial-page-size="10"
-      />
-      <DataTable
-        :rows="typeRows"
-        :columns="dimensionColumns"
-        row-key="rowKey"
-        empty-text="Sin datos por tipo"
+        empty-text="Sin datos por estado"
         :initial-page-size="10"
       />
     </div>
 
-    <DataTable
-      :rows="statusRows"
-      :columns="statusColumns"
-      row-key="rowKey"
-      empty-text="Sin datos por estado"
-      :initial-page-size="10"
-    />
-
-    <DataTable
-      :rows="resolutionTicketsRows"
-      :columns="resolutionColumns"
-      row-key="id"
-      empty-text="Sin tickets resueltos en rango"
-      :initial-page-size="10"
-    />
+    <div class="panel">
+      <h3 style="margin: 0 0 0.6rem">Detalle de resolución</h3>
+      <DataTable
+        :rows="resolutionTicketsRows"
+        :columns="resolutionColumns"
+        row-key="id"
+        empty-text="Sin tickets resueltos en rango"
+        :initial-page-size="10"
+      />
+    </div>
 
     <div class="grid-2">
-      <DataTable
-        :rows="assigneeRows"
-        :columns="usersColumns"
-        row-key="rowKey"
-        empty-text="Sin datos"
-        :initial-page-size="10"
-      />
+      <div class="panel">
+        <h3 style="margin: 0 0 0.6rem">Carga por asignado</h3>
+        <DataTable
+          :rows="assigneeRows"
+          :columns="usersColumns"
+          row-key="rowKey"
+          empty-text="Sin datos"
+          :initial-page-size="10"
+        />
+      </div>
 
-      <DataTable
-        :rows="creatorRows"
-        :columns="usersColumns"
-        row-key="rowKey"
-        empty-text="Sin datos"
-        :initial-page-size="10"
-      />
+      <div class="panel">
+        <h3 style="margin: 0 0 0.6rem">Creación por usuario</h3>
+        <DataTable
+          :rows="creatorRows"
+          :columns="usersColumns"
+          row-key="rowKey"
+          empty-text="Sin datos"
+          :initial-page-size="10"
+        />
+      </div>
     </div>
   </section>
 </template>

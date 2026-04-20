@@ -25,16 +25,15 @@
       </div>
     </section>
 
-    <section class="ticket-detail-grid">
-      <div class="ticket-detail-grid__main stack">
-        <article class="panel ticket-panel">
-          <div class="panel-header">
-            <div class="page-title">
-              <h2 style="font-size: 1.05rem">Información principal</h2>
-              <p>Define el caso con el contexto suficiente para facilitar triage y ejecución.</p>
-            </div>
+    <section class="ticket-workspace">
+      <article class="panel ticket-panel">
+        <div class="panel-header">
+          <div class="page-title">
+            <h2 style="font-size: 1.05rem">Información principal</h2>
+            <p>Define el caso con el contexto suficiente para facilitar triage y ejecución.</p>
           </div>
-          <form class="grid-2" @submit.prevent="submit">
+        </div>
+        <form class="grid-2" @submit.prevent="submit">
             <div class="field-stack" style="grid-column: 1 / -1">
               <label for="title">Título</label>
               <input id="title" v-model.trim="form.title" required minlength="3" placeholder="Resume el objetivo del ticket" />
@@ -104,11 +103,7 @@
               <button class="btn btn-primary" type="submit">Crear ticket</button>
             </div>
           </form>
-        </article>
-      </div>
-
-      <aside class="ticket-detail-grid__side stack">
-        <article class="panel ticket-panel">
+        <div class="ticket-inline-form">
           <div class="panel-header">
             <div class="page-title">
               <h2 style="font-size: 1.05rem">Guía rápida</h2>
@@ -133,8 +128,8 @@
               <strong>Déjalo listo si ya conoces al responsable</strong>
             </div>
           </div>
-        </article>
-      </aside>
+        </div>
+      </article>
     </section>
   </section>
 </template>

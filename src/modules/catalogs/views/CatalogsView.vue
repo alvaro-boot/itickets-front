@@ -7,6 +7,24 @@
       </div>
     </div>
 
+    <div class="stats-grid">
+      <article class="stat-card">
+        <p class="stat-card__label">Productos</p>
+        <p class="stat-card__value">{{ products.length }}</p>
+        <p class="stat-card__hint">Catálogo activo por compañía</p>
+      </article>
+      <article class="stat-card">
+        <p class="stat-card__label">Tipos</p>
+        <p class="stat-card__value">{{ types.length }}</p>
+        <p class="stat-card__hint">Clasificación disponible de tickets</p>
+      </article>
+      <article class="stat-card">
+        <p class="stat-card__label">Áreas</p>
+        <p class="stat-card__value">{{ areas.length }}</p>
+        <p class="stat-card__hint">Áreas solicitantes registradas</p>
+      </article>
+    </div>
+
     <div class="grid-2">
       <div class="panel">
         <h3 style="margin-top: 0">Registrar producto</h3>

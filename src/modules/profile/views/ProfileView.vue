@@ -7,6 +7,24 @@
       </div>
     </div>
 
+    <div class="stats-grid">
+      <article class="stat-card">
+        <p class="stat-card__label">Nombre</p>
+        <p class="stat-card__value" style="font-size: 1.1rem">{{ profileForm.fullName || '—' }}</p>
+        <p class="stat-card__hint">Identidad visible en el sistema</p>
+      </article>
+      <article class="stat-card">
+        <p class="stat-card__label">Correo</p>
+        <p class="stat-card__value" style="font-size: 1.1rem">{{ profileForm.email || '—' }}</p>
+        <p class="stat-card__hint">Cuenta principal de acceso</p>
+      </article>
+      <article class="stat-card">
+        <p class="stat-card__label">Teléfono</p>
+        <p class="stat-card__value" style="font-size: 1.1rem">{{ profileForm.phone || '—' }}</p>
+        <p class="stat-card__hint">Canal de contacto operativo</p>
+      </article>
+    </div>
+
     <div v-if="isLoading" class="panel">
       <p class="meta">Cargando perfil...</p>
     </div>

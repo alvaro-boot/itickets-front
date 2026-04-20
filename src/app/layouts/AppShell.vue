@@ -1,5 +1,5 @@
 <template>
-  <div class="app-shell">
+  <div class="app-shell shell-frame">
     <header class="topbar">
       <div class="topbar-brand-block">
         <RouterLink to="/tickets" class="brand">
@@ -13,6 +13,7 @@
       </div>
       <button class="menu-toggle" type="button" aria-label="Abrir menú" @click="toggleSidebar">☰</button>
       <nav class="nav-actions" aria-label="Principal">
+        <RouterLink class="btn btn-ghost topbar-quick-action" to="/tickets/new">+ Ticket</RouterLink>
         <div class="nav-user-card">
           <div class="nav-user-card__copy">
             <strong>{{ auth.state.profile?.fullName || 'Sesion activa' }}</strong>
@@ -26,9 +27,10 @@
       </nav>
     </header>
 
-    <div class="layout">
+    <div class="layout shell-layout">
       <aside class="sidebar" :hidden="false">
-        <h2>Modulo principal</h2>
+        <h2>Navegación</h2>
+        <p class="meta">Accesos rápidos del sistema</p>
         <nav class="menu" aria-label="Secciones">
           <RouterLink
             v-for="item in visibleItems"
@@ -43,12 +45,14 @@
         </nav>
       </aside>
 
-      <main class="content">
-        <section class="hero">
+      <main class="content content-shell">
+        <section class="hero page-hero">
           <h1>{{ route.meta.title || 'Panel' }}</h1>
           <p>{{ route.meta.subtitle || 'Gestion central de tickets y operaciones.' }}</p>
         </section>
-        <RouterView />
+        <section class="content-scroll">
+          <RouterView />
+        </section>
       </main>
     </div>
   </div>

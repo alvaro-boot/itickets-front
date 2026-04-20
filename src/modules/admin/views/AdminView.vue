@@ -7,6 +7,24 @@
       </div>
     </div>
 
+    <div class="stats-grid">
+      <article class="stat-card">
+        <p class="stat-card__label">Empresas</p>
+        <p class="stat-card__value">{{ companies.length }}</p>
+        <p class="stat-card__hint">Organizaciones registradas</p>
+      </article>
+      <article class="stat-card">
+        <p class="stat-card__label">Permisos</p>
+        <p class="stat-card__value">{{ permissions.length }}</p>
+        <p class="stat-card__hint">Controles de acceso disponibles</p>
+      </article>
+      <article class="stat-card">
+        <p class="stat-card__label">Módulos activos</p>
+        <p class="stat-card__value">{{ enabledModulesCount }}</p>
+        <p class="stat-card__hint">Suma de módulos habilitados por empresa</p>
+      </article>
+    </div>
+
     <div v-if="isLoading" class="panel">
       <p class="meta">Cargando administración...</p>
     </div>
@@ -90,7 +108,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { adminService } from '../services/adminService';
 import { useUi } from '../../../shared/composables/useUi';
 import { useUsers } from '../../../shared/composables/useUsers';
@@ -119,6 +137,12 @@ const userForm = ref({
   password: '',
   roleCode: 'COMPANY_ADMIN',
 });
+const enabledModulesCount = computed(() =>
+  companyRows.value.reduce(
+    (acc, row) => acc + (row.modules || []).filter((module) => Boolean(module.isEnabled)).length,
+    0,
+  ),
+);
 
 async function loadAdmin() {
   isLoading.value = true;
