@@ -124,6 +124,21 @@ onMounted(async () => {
 .rich-text-editor__toolbar {
   flex-wrap: wrap;
   margin-bottom: 0.45rem;
+  gap: 0.45rem;
+}
+
+.rich-text-editor__toolbar .btn {
+  width: auto;
+  min-width: 42px;
+  padding: 0.45rem 0.65rem;
+}
+
+.rich-text-editor__toolbar .btn strong,
+.rich-text-editor__toolbar .btn em,
+.rich-text-editor__toolbar .btn u {
+  display: inline-block;
+  min-width: 10px;
+  text-align: center;
 }
 </style>
 
