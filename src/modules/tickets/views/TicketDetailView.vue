@@ -398,6 +398,8 @@ const activityCount = computed(() => {
   const worklogs = ticket.value?.worklogs?.length || 0;
   return events + comments + worklogs;
 });
+
+const SERVERLESS_SAFE_UPLOAD_BYTES = 4 * 1024 * 1024;
 const commentsCount = computed(() => ticket.value?.comments?.length || 0);
 const eventsCount = computed(() => ticket.value?.events?.length || 0);
 const totalLoggedMinutes = computed(() => Number(ticket.value?.totalLoggedMinutes || 0));
@@ -595,6 +597,14 @@ async function uploadAttachment() {
   const file = commentFileInput.value?.files?.[0];
   if (!file) {
     ui.showToast('Selecciona un archivo antes de subir.', true);
+    return;
+  }
+  if (file.size > SERVERLESS_SAFE_UPLOAD_BYTES) {
+    const currentMb = (file.size / (1024 * 1024)).toFixed(1);
+    ui.showToast(
+      `El archivo pesa ${currentMb}MB y supera el límite permitido en producción (4MB). Comprime la imagen o usa un archivo más liviano.`,
+      true,
+    );
     return;
   }
   try {
