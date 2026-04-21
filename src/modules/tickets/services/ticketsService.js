@@ -20,5 +20,6 @@ export const ticketsService = {
     request(`/tickets/${id}/assignee`, { method: 'PATCH', body: JSON.stringify(body) }, { noCache: true }),
   update: (id, body) => request(`/tickets/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   comment: (id, body) => request(`/tickets/${id}/comments`, { method: 'POST', body: JSON.stringify(body) }),
+  deleteComment: (id, commentId) => request(`/tickets/${id}/comments/${commentId}`, { method: 'DELETE' }),
   addWorklog: (id, body) => request(`/tickets/${id}/worklogs`, { method: 'POST', body: JSON.stringify(body) }),
 };

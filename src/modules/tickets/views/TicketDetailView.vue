@@ -192,7 +192,18 @@
               <div class="timeline-item__content">
                 <div class="timeline-item__header">
                   <strong>{{ comment.author?.fullName || 'Usuario' }}</strong>
-                  <span>{{ fmtDate(comment.createdAt) }}</span>
+                  <div class="actions-row" style="gap: 0.45rem">
+                    <span>{{ fmtDate(comment.createdAt) }}</span>
+                    <button
+                      v-if="canDeleteComment(comment)"
+                      class="btn btn-ghost"
+                      type="button"
+                      :disabled="isBusy"
+                      @click="removeComment(comment)"
+                    >
+                      {{ deletingCommentId === String(comment.id) ? 'Eliminando...' : 'Eliminar' }}
+                    </button>
+                  </div>
                 </div>
                 <RichHtmlDisplay
                   v-if="stripUrlsForDisplay(comment.body)"
@@ -335,6 +346,7 @@ const commentFileInput = ref(null);
 const isSaving = ref(false);
 const isCommenting = ref(false);
 const isDuplicating = ref(false);
+const deletingCommentId = ref('');
 const activeWorkspaceTab = ref('data');
 const worklog = reactive({
   minutesSpent: null,
@@ -424,7 +436,9 @@ const workspaceTabs = computed(() => [
   { key: 'history', label: 'Historial', count: eventsCount.value },
   { key: 'time', label: 'Tiempo', count: totalLoggedBadge.value, disabled: !showWorklogs.value },
 ]);
-const isBusy = computed(() => isSaving.value || isCommenting.value || isDuplicating.value);
+const isBusy = computed(
+  () => isSaving.value || isCommenting.value || isDuplicating.value || Boolean(deletingCommentId.value),
+);
 const busyMessage = computed(() => {
   if (isSaving.value) return 'Guardando cambios del ticket...';
   if (isCommenting.value) return 'Publicando comentario...';
@@ -589,6 +603,39 @@ async function addComment() {
     ui.showToast(error.message || 'No se pudo registrar el comentario.', true);
   } finally {
     isCommenting.value = false;
+  }
+}
+
+function canDeleteComment(comment) {
+  if (!comment?.id) return false;
+  return !String(comment.id).startsWith('tmp-');
+}
+
+async function removeComment(comment) {
+  if (isBusy.value || !canDeleteComment(comment)) return;
+  const confirmed = window.confirm('¿Seguro que quieres eliminar este comentario? Esta acción no se puede deshacer.');
+  if (!confirmed) return;
+  deletingCommentId.value = String(comment.id);
+  const previousComments = [...(ticket.value?.comments || [])];
+  if (ticket.value) {
+    ticket.value = {
+      ...ticket.value,
+      comments: previousComments.filter((item) => String(item.id) !== String(comment.id)),
+    };
+  }
+  try {
+    await ticketsService.deleteComment(route.params.id, comment.id);
+    ui.showToast('Comentario eliminado.', false);
+  } catch (error) {
+    if (ticket.value) {
+      ticket.value = {
+        ...ticket.value,
+        comments: previousComments,
+      };
+    }
+    ui.showToast(error.message || 'No se pudo eliminar el comentario.', true);
+  } finally {
+    deletingCommentId.value = '';
   }
 }
 
