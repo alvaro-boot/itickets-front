@@ -400,7 +400,8 @@ const activityCount = computed(() => {
 });
 const commentsCount = computed(() => ticket.value?.comments?.length || 0);
 const eventsCount = computed(() => ticket.value?.events?.length || 0);
-const worklogsCount = computed(() => ticket.value?.worklogs?.length || 0);
+const totalLoggedMinutes = computed(() => Number(ticket.value?.totalLoggedMinutes || 0));
+const totalLoggedBadge = computed(() => `${totalLoggedMinutes.value}m`);
 
 const selectedStatusCode = computed(() => {
   const st = catalogs.statuses.find((status) => String(status.id) === String(form.statusId));
@@ -419,7 +420,7 @@ const workspaceTabs = computed(() => [
   { key: 'data', label: 'Datos' },
   { key: 'comments', label: 'Comentarios', count: commentsCount.value },
   { key: 'history', label: 'Historial', count: eventsCount.value },
-  { key: 'time', label: 'Tiempo', count: worklogsCount.value, disabled: !showWorklogs.value },
+  { key: 'time', label: 'Tiempo', count: totalLoggedBadge.value, disabled: !showWorklogs.value },
 ]);
 const isBusy = computed(() => isSaving.value || isCommenting.value || isDuplicating.value);
 const busyMessage = computed(() => {
