@@ -14,6 +14,22 @@
       <button class="menu-toggle" type="button" aria-label="Abrir menú" @click="toggleSidebar">☰</button>
       <nav class="nav-actions" aria-label="Principal">
         <RouterLink class="btn btn-ghost topbar-quick-action" to="/tickets/new">+ Ticket</RouterLink>
+        <div
+          v-if="(auth.state.profile?.companies?.length || 0) > 1"
+          class="field-stack"
+          style="min-width: 220px; margin: 0"
+        >
+          <label for="active-company" style="font-size: 0.72rem; margin-bottom: 0.15rem">Empresa activa</label>
+          <select
+            id="active-company"
+            :value="auth.state.profile?.activeCompanyId || auth.state.profile?.companyId || ''"
+            @change="handleSwitchCompany"
+          >
+            <option v-for="company in auth.state.profile?.companies || []" :key="company.id" :value="company.id">
+              {{ company.name }}
+            </option>
+          </select>
+        </div>
         <div class="nav-user-card">
           <div class="nav-user-card__copy">
             <strong>{{ auth.state.profile?.fullName || 'Sesion activa' }}</strong>
@@ -130,6 +146,18 @@ function toggleSidebar() {
 function handleLogout() {
   auth.logout();
   router.push('/login');
+}
+
+async function handleSwitchCompany(event) {
+  const companyId = String(event.target?.value || '');
+  const currentCompanyId = auth.state.profile?.activeCompanyId || auth.state.profile?.companyId || '';
+  if (!companyId || companyId === currentCompanyId) return;
+  try {
+    await auth.switchCompany(companyId);
+    ui.showToast('Empresa activa actualizada.');
+  } catch (error) {
+    ui.showToast(error.message || 'No se pudo cambiar de empresa.', true);
+  }
 }
 
 watch(

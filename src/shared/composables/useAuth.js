@@ -5,6 +5,7 @@ import { authService } from '../../modules/auth/services/authService';
 const state = reactive({
   token: getToken(),
   profile: null,
+  pendingCompanySelection: null,
   initialized: false,
 });
 
@@ -43,6 +44,40 @@ async function refreshProfile() {
 
 async function login(credentials) {
   const response = await authService.login(credentials);
+  if (response?.requiresCompanySelection) {
+    state.pendingCompanySelection = {
+      selectionToken: response.selectionToken,
+      companies: response.companies || [],
+      user: response.user || null,
+    };
+    state.token = null;
+    state.profile = null;
+    setToken(null);
+    return response;
+  }
+
+  state.pendingCompanySelection = null;
+  state.token = response.access_token;
+  setToken(state.token);
+  await refreshProfile();
+  return response;
+}
+
+async function selectCompany(companyId) {
+  const selectionToken = state.pendingCompanySelection?.selectionToken;
+  if (!selectionToken) {
+    throw new Error('No hay una selección de empresa pendiente.');
+  }
+  const response = await authService.selectCompany({ selectionToken, companyId });
+  state.pendingCompanySelection = null;
+  state.token = response.access_token;
+  setToken(state.token);
+  await refreshProfile();
+  return response;
+}
+
+async function switchCompany(companyId) {
+  const response = await authService.switchCompany({ companyId });
   state.token = response.access_token;
   setToken(state.token);
   await refreshProfile();
@@ -52,6 +87,7 @@ async function login(credentials) {
 function logout() {
   state.token = null;
   state.profile = null;
+  state.pendingCompanySelection = null;
   state.initialized = true;
   setToken(null);
 }
@@ -64,6 +100,8 @@ export function useAuth() {
     hydrateProfile,
     refreshProfile,
     login,
+    selectCompany,
+    switchCompany,
     logout,
   };
 }
