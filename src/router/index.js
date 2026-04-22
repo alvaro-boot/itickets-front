@@ -1,16 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import AppShell from '../app/layouts/AppShell.vue';
-import LoginView from '../modules/auth/views/LoginView.vue';
-import TicketsListView from '../modules/tickets/views/TicketsListView.vue';
-import TicketCreateView from '../modules/tickets/views/TicketCreateView.vue';
-import TicketDetailView from '../modules/tickets/views/TicketDetailView.vue';
-import IncidentsView from '../modules/incidents/views/IncidentsView.vue';
-import TasksView from '../modules/tasks/views/TasksView.vue';
-import ProfileView from '../modules/profile/views/ProfileView.vue';
-import CatalogsView from '../modules/catalogs/views/CatalogsView.vue';
-import AdminView from '../modules/admin/views/AdminView.vue';
-import ReportsView from '../modules/reports/views/ReportsView.vue';
 import { useAuth } from '../shared/composables/useAuth';
+
+const AppShell = () => import('../app/layouts/AppShell.vue');
+const LoginView = () => import('../modules/auth/views/LoginView.vue');
+const TicketsListView = () => import('../modules/tickets/views/TicketsListView.vue');
+const TicketCreateView = () => import('../modules/tickets/views/TicketCreateView.vue');
+const TicketDetailView = () => import('../modules/tickets/views/TicketDetailView.vue');
+const IncidentsView = () => import('../modules/incidents/views/IncidentsView.vue');
+const TasksView = () => import('../modules/tasks/views/TasksView.vue');
+const ProfileView = () => import('../modules/profile/views/ProfileView.vue');
+const CatalogsView = () => import('../modules/catalogs/views/CatalogsView.vue');
+const AdminView = () => import('../modules/admin/views/AdminView.vue');
+const ReportsView = () => import('../modules/reports/views/ReportsView.vue');
 
 const routes = [
   {
