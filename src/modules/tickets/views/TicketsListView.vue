@@ -29,21 +29,21 @@
 
       <article class="stat-card">
         <p class="stat-card__label">Mis asignados</p>
-        <p class="stat-card__value">{{ filteredByTab('mine').length }}</p>
-        <p class="stat-card__hint">Casos asignados directamente a tu usuario</p>
+        <p class="stat-card__value">{{ activeTab === 'mine' ? total : '—' }}</p>
+        <p class="stat-card__hint">Total en backend para la vista actual de asignados</p>
       </article>
     </div>
 
     <div class="stats-grid">
       <article class="stat-card">
         <p class="stat-card__label">No asignados</p>
-        <p class="stat-card__value">{{ filteredByTab('unassigned').length }}</p>
-        <p class="stat-card__hint">Oportunidades rápidas para distribuir mejor el trabajo</p>
+        <p class="stat-card__value">{{ activeTab === 'unassigned' ? total : '—' }}</p>
+        <p class="stat-card__hint">Total en backend para la vista de no asignados</p>
       </article>
       <article class="stat-card">
         <p class="stat-card__label">Cerrados</p>
-        <p class="stat-card__value">{{ filteredByTab('closed').length }}</p>
-        <p class="stat-card__hint">Tickets ya resueltos dentro del conjunto visible</p>
+        <p class="stat-card__value">{{ activeTab === 'closed' ? total : '—' }}</p>
+        <p class="stat-card__hint">Total en backend para la vista de cerrados</p>
       </article>
       <article class="stat-card">
         <p class="stat-card__label">Búsqueda actual</p>
@@ -112,7 +112,7 @@
         type="button"
         @click="activeTab = tab.key"
       >
-        {{ tab.label }} <span class="badge">{{ filteredByTab(tab.key).length }}</span>
+        {{ tab.label }} <span class="badge">{{ activeTab === tab.key ? total : '—' }}</span>
       </button>
     </div>
 
@@ -210,15 +210,13 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import { ticketsService } from '../services/ticketsService';
 import { useCatalogs } from '../../../shared/composables/useCatalogs';
-import { useAuth } from '../../../shared/composables/useAuth';
 import { useUi } from '../../../shared/composables/useUi';
 import { fmtDate, priorityClass } from '../../../shared/utils/format';
 
-const auth = useAuth();
 const ui = useUi();
 const { fetchCatalogBundle } = useCatalogs();
 
@@ -243,27 +241,7 @@ const tabs = [
   { key: 'closed', label: 'Cerrados' },
 ];
 
-function isClosedTicket(ticket) {
-  const statusName = String(ticket.status?.name || '').toLowerCase();
-  const statusCode = String(ticket.status?.code || '').toLowerCase();
-  return Boolean(ticket.closedAt) || statusName.includes('cerrad') || statusCode.includes('closed');
-}
-
-function filteredByTab(tab) {
-  const meId = auth.state.profile?.id ? String(auth.state.profile.id) : null;
-  if (tab === 'mine') {
-    return rows.value.filter((ticket) => String(ticket.assigneeId || '') === meId && !isClosedTicket(ticket));
-  }
-  if (tab === 'unassigned') {
-    return rows.value.filter(
-      (ticket) => (ticket.assigneeId == null || String(ticket.assigneeId) === '') && !isClosedTicket(ticket),
-    );
-  }
-  if (tab === 'closed') return rows.value.filter(isClosedTicket);
-  return rows.value.filter((ticket) => !isClosedTicket(ticket));
-}
-
-const visibleRows = computed(() => filteredByTab(activeTab.value));
+const visibleRows = computed(() => rows.value);
 const activeTabLabel = computed(() => tabs.find((tab) => tab.key === activeTab.value)?.label || 'General');
 
 async function loadTickets() {
@@ -274,6 +252,7 @@ async function loadTickets() {
       from: filters.from,
       to: filters.to,
       statusId: filters.statusId,
+      view: activeTab.value,
       page: page.value,
       limit: limit.value,
     });
@@ -346,5 +325,10 @@ onMounted(async () => {
     statuses.value = [];
   }
   await loadTickets();
+});
+
+watch(activeTab, () => {
+  page.value = 1;
+  loadTickets();
 });
 </script>
