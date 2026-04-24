@@ -114,51 +114,63 @@ a.brand:hover {
 }
 
 .brand-icon {
-  width: 40px;
-  height: 40px;
   object-fit: contain;
   flex-shrink: 0;
-  border-radius: 12px;
+  display: block;
+  border-radius: 14px;
 }
 
-.brand--login .brand-icon {
-  width: 44px;
-  height: 44px;
+.brand-icon--topbar {
+  width: 56px;
+  height: 56px;
+}
+
+.brand-icon--sidebar {
+  width: 72px;
+  height: 72px;
+  border-radius: 16px;
+}
+
+.sidebar-brand {
+  display: inline-flex;
+  margin: 0 0 0.85rem;
+  text-decoration: none;
+  border-radius: 16px;
+  transition: opacity var(--motion-fast, 160ms) var(--ease-standard, ease);
+}
+
+.sidebar-brand:hover {
+  opacity: 0.9;
 }
 
 .brand-logo-img {
-  height: 28px;
   width: auto;
-  max-width: min(220px, 46vw);
+  height: 44px;
+  max-width: min(240px, 52vw);
   object-fit: contain;
   object-position: left center;
   display: block;
 }
 
 .brand-logo-img--login {
-  height: 34px;
-  max-width: min(280px, 72vw);
-}
-
-.brand-divider {
-  width: 1px;
-  height: 26px;
-  flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.14);
-}
-
-.brand--login .brand-divider {
-  height: 30px;
-}
-
-.brand--shell .brand-logo-img {
-  height: 26px;
-  max-width: min(200px, 40vw);
+  height: clamp(72px, 14vw, 96px);
+  max-width: min(420px, 92vw);
 }
 
 @media (max-width: 520px) {
-  .brand--shell .brand-logo-img {
-    max-width: min(160px, 52vw);
+  .brand-icon--topbar {
+    width: 48px;
+    height: 48px;
+  }
+
+  .brand-icon--sidebar {
+    width: 64px;
+    height: 64px;
+  }
+
+  .brand-logo-img--login {
+    height: clamp(64px, 22vw, 88px);
+    max-width: min(360px, 94vw);
   }
 }
 

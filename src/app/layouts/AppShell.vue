@@ -2,10 +2,8 @@
   <div class="app-shell shell-frame">
     <header class="topbar">
       <div class="topbar-brand-block">
-        <RouterLink to="/tickets" class="brand brand--shell" aria-label="iTickets — inicio">
-          <img src="/images/icono.png" alt="" class="brand-icon" width="40" height="40" decoding="async" />
-          <span class="brand-divider" aria-hidden="true"></span>
-          <img src="/images/logo.png" alt="iTickets" class="brand-logo-img" decoding="async" />
+        <RouterLink to="/tickets" class="brand brand--shell" aria-label="IT-Sistemas — inicio">
+          <img src="/images/icono.png" alt="" class="brand-icon brand-icon--topbar" width="64" height="64" decoding="async" />
         </RouterLink>
         <div class="topbar-brand-copy">
           <strong>Operations Desk</strong>
@@ -45,6 +43,9 @@
 
     <div class="layout shell-layout">
       <aside class="sidebar" :hidden="false">
+        <RouterLink to="/tickets" class="sidebar-brand" aria-label="Inicio" @click="closeSidebar">
+          <img src="/images/icono.png" alt="" class="brand-icon brand-icon--sidebar" width="72" height="72" decoding="async" />
+        </RouterLink>
         <h2>Navegación</h2>
         <p class="meta">Accesos rápidos del sistema</p>
         <nav class="menu" aria-label="Secciones">
