@@ -3,58 +3,9 @@
     <div class="page-header">
       <div class="page-title">
         <h2>Centro de tickets</h2>
-        <p>Supervisa el flujo operativo, asigna prioridades y detecta carga sin salir del panel.</p>
+        <p>{{ paginationMeta }}</p>
       </div>
-      <RouterLink class="btn btn-primary" to="/tickets/new">Nuevo ticket</RouterLink>
-    </div>
-
-    <div class="surface-grid surface-grid--3">
-      <article class="spotlight-card">
-        <p class="spotlight-card__eyebrow">Monitoreo activo</p>
-        <h3 class="spotlight-card__title">Gestiona la operación con foco en asignación, prioridad y cierre.</h3>
-        <p class="spotlight-card__copy">
-          Usa este tablero para identificar trabajo pendiente, tickets críticos y distribución de carga del equipo.
-        </p>
-        <div class="spotlight-card__meta">
-          <span class="spotlight-pill">Actualización en tiempo real</span>
-          <span class="spotlight-pill">Vista por estado</span>
-        </div>
-      </article>
-
-      <article class="stat-card">
-        <p class="stat-card__label">Total visibles</p>
-        <p class="stat-card__value">{{ total }}</p>
-        <p class="stat-card__hint">Tickets cargados según el filtro de búsqueda actual</p>
-      </article>
-
-      <article class="stat-card">
-        <p class="stat-card__label">Mis asignados</p>
-        <p class="stat-card__value">{{ tabTotals.mine }}</p>
-        <p class="stat-card__hint">Total en backend para la vista actual de asignados</p>
-      </article>
-    </div>
-
-    <div class="stats-grid">
-      <article class="stat-card">
-        <p class="stat-card__label">No asignados</p>
-        <p class="stat-card__value">{{ tabTotals.unassigned }}</p>
-        <p class="stat-card__hint">Total en backend para la vista de no asignados</p>
-      </article>
-      <article class="stat-card">
-        <p class="stat-card__label">Cerrados</p>
-        <p class="stat-card__value">{{ tabTotals.closed }}</p>
-        <p class="stat-card__hint">Total en backend para la vista de cerrados</p>
-      </article>
-      <article class="stat-card">
-        <p class="stat-card__label">Búsqueda actual</p>
-        <p class="stat-card__value">{{ query ? 'Activa' : 'General' }}</p>
-        <p class="stat-card__hint">Filtra por título o descripción para reducir el ruido</p>
-      </article>
-      <article class="stat-card">
-        <p class="stat-card__label">Vista seleccionada</p>
-        <p class="stat-card__value">{{ activeTabLabel }}</p>
-        <p class="stat-card__hint">Tab operativo que estás usando para revisar la cola</p>
-      </article>
+      <RouterLink class="btn btn-primary" :to="{ path: '/tickets/new', query: currentListQuery }">Nuevo ticket</RouterLink>
     </div>
 
     <div class="panel search-panel" role="region" aria-label="Filtros de tickets">
@@ -112,7 +63,7 @@
         type="button"
         @click="activeTab = tab.key"
       >
-        {{ tab.label }} <span class="badge">{{ tabTotals[tab.key] }}</span>
+        {{ tab.label }} <span class="badge">{{ tabTotals[tab.key] || 0 }}</span>
       </button>
     </div>
 
@@ -250,7 +201,6 @@ const tabs = [
 ];
 
 const visibleRows = computed(() => rows.value);
-const activeTabLabel = computed(() => tabs.find((tab) => tab.key === activeTab.value)?.label || 'General');
 const currentListQuery = computed(() => ({
   q: query.value || undefined,
   from: filters.from || undefined,

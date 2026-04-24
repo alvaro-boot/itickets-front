@@ -5,7 +5,7 @@
         <h2>Ticket #{{ route.params.id }}</h2>
         <p>Organiza el seguimiento del caso, controla su contexto y documenta todo el avance en un solo lugar.</p>
       </div>
-      <RouterLink class="btn btn-ghost" to="/tickets">Lista</RouterLink>
+      <RouterLink class="btn btn-ghost" :to="backToListTarget">Lista</RouterLink>
     </div>
 
     <div v-if="loading" class="panel">
@@ -432,6 +432,11 @@ const busyMessage = computed(() => {
   if (isCommenting.value) return 'Publicando comentario...';
   if (isDuplicating.value) return 'Duplicando ticket...';
   return 'Cargando...';
+});
+
+const backToListTarget = computed(() => {
+  const query = { ...route.query };
+  return Object.keys(query).length ? { path: '/tickets', query } : { path: '/tickets' };
 });
 
 function syncForm() {
