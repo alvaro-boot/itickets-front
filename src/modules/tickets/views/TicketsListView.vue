@@ -5,7 +5,6 @@
         <h2>Centro de tickets</h2>
         <p>{{ paginationMeta }}</p>
       </div>
-      <RouterLink class="btn btn-primary" :to="{ path: '/tickets/new', query: currentListQuery }">Nuevo ticket</RouterLink>
     </div>
 
     <div class="panel search-panel" role="region" aria-label="Filtros de tickets">

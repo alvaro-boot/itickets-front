@@ -13,7 +13,6 @@
       </div>
       <button class="menu-toggle" type="button" aria-label="Abrir menú" @click="toggleSidebar">☰</button>
       <nav class="nav-actions" aria-label="Principal">
-        <RouterLink class="btn btn-ghost topbar-quick-action" to="/tickets/new">+ Ticket</RouterLink>
         <div
           v-if="(auth.state.profile?.companies?.length || 0) > 1"
           class="field-stack"
@@ -63,8 +62,13 @@
 
       <main class="content content-shell">
         <section class="hero page-hero">
-          <h1>{{ route.meta.title || 'Panel' }}</h1>
-          <p>{{ route.meta.subtitle || 'Gestion central de tickets y operaciones.' }}</p>
+          <div class="actions-row" style="justify-content: space-between; align-items: flex-start; width: 100%">
+            <div>
+              <h1>{{ route.meta.title || 'Panel' }}</h1>
+              <p>{{ route.meta.subtitle || 'Gestion central de tickets y operaciones.' }}</p>
+            </div>
+            <button class="btn btn-ghost" type="button" @click="handleGoBack">Atrás</button>
+          </div>
         </section>
         <section class="content-scroll">
           <RouterView />
@@ -146,6 +150,14 @@ function toggleSidebar() {
 function handleLogout() {
   auth.logout();
   router.push('/login');
+}
+
+function handleGoBack() {
+  if (window.history.length > 1) {
+    router.back();
+    return;
+  }
+  router.push('/tickets');
 }
 
 async function handleSwitchCompany(event) {
