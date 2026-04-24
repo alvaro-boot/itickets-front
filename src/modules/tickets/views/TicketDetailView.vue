@@ -72,7 +72,8 @@
       </section>
 
       <section class="ticket-workspace">
-        <article v-if="activeWorkspaceTab === 'overview'" class="panel ticket-panel">
+        <div v-if="activeWorkspaceTab === 'overview'" class="ticket-overview-workspace">
+          <article class="panel ticket-panel">
           <div class="panel-header">
             <div class="page-title">
               <h2 style="font-size: 1.05rem">Datos principales</h2>
@@ -149,95 +150,133 @@
                 {{ isDuplicating ? 'Duplicando...' : 'Duplicar y asignar' }}
               </button>
             </div>
-          </div>
-        </article>
 
-        <article v-if="activeWorkspaceTab === 'overview'" class="panel ticket-panel">
-          <div class="panel-header">
-            <div class="page-title">
-              <h2 style="font-size: 1.05rem">Comentarios</h2>
-              <p>Actualizaciones rápidas del equipo sobre el caso.</p>
-            </div>
-          </div>
-          <form class="ticket-inline-form comment-composer" @submit.prevent="addComment">
-            <div class="field-stack">
-              <label for="body">Nuevo comentario</label>
-              <RichTextEditor
-                id="body"
-                v-model="commentBody"
-                compact
-                placeholder="Escribe una actualización..."
-                :disabled="isBusy"
-              />
-            </div>
-            <div class="actions-row" style="justify-content: space-between">
-              <input ref="commentFileInput" type="file" :disabled="isBusy" />
-              <button class="btn btn-ghost" type="button" :disabled="isBusy" @click="uploadAttachment">
-                Subir archivo/foto
-              </button>
-            </div>
-            <button class="btn btn-primary" type="submit" :disabled="isBusy">
-              {{ isCommenting ? 'Publicando...' : 'Publicar' }}
-            </button>
-          </form>
-
-          <div class="comment-timeline">
-            <div v-if="(ticket.comments || []).length === 0" class="meta">Sin comentarios aún.</div>
-            <div
-              v-for="comment in ticket.comments || []"
-              :key="comment.id || comment.createdAt"
-              class="timeline-item timeline-item--comment"
-            >
-              <div class="timeline-item__dot"></div>
-              <div class="timeline-item__content">
-                <div class="timeline-item__header">
-                  <strong>{{ comment.author?.fullName || 'Usuario' }}</strong>
-                  <div class="actions-row" style="gap: 0.45rem">
-                    <span>{{ fmtDate(comment.createdAt) }}</span>
-                    <button
-                      v-if="canDeleteComment(comment)"
-                      class="btn btn-ghost"
-                      type="button"
-                      :disabled="isBusy"
-                      @click="removeComment(comment)"
-                    >
-                      {{ deletingCommentId === String(comment.id) ? 'Eliminando...' : 'Eliminar' }}
-                    </button>
-                  </div>
+            <div v-if="showWorklogs" class="ticket-inline-form ticket-time-inline">
+              <p class="meta" style="margin: 0">
+                Estado cerrado detectado: registra tiempo aquí y se guardará con “Guardar cambios”.
+              </p>
+              <div class="grid-2">
+                <div class="field-stack">
+                  <label for="minutesSpent">Minutos trabajados</label>
+                  <input
+                    id="minutesSpent"
+                    v-model.number="worklog.minutesSpent"
+                    type="number"
+                    min="1"
+                    max="1440"
+                  />
                 </div>
-                <RichHtmlDisplay
-                  v-if="stripUrlsForDisplay(comment.body)"
-                  class="comment-rich-body"
-                  :html="stripUrlsForDisplay(comment.body)"
-                />
-                <p v-else class="meta">Adjunto sin texto</p>
-                <div v-if="extractAttachments(comment.body).length" class="stack" style="margin-top: 0.5rem">
-                  <article
-                    v-for="attachment in extractAttachments(comment.body)"
-                    :key="attachment.url"
-                    class="panel"
-                    style="padding: 0.6rem"
-                  >
-                    <img
-                      v-if="attachment.isImage"
-                      :src="attachment.url"
-                      alt="Imagen adjunta"
-                      style="max-width: 100%; border-radius: 10px; margin-bottom: 0.5rem"
-                    />
-                    <div class="actions-row" style="justify-content: space-between">
-                      <a class="btn btn-ghost" :href="attachment.url" target="_blank" rel="noopener noreferrer">
-                        Ver
-                      </a>
-                      <a class="btn btn-primary" :href="attachment.url" download>
-                        Descargar
-                      </a>
-                    </div>
-                  </article>
+                <div class="field-stack">
+                  <label for="worklogNote">Nota (opcional)</label>
+                  <input id="worklogNote" v-model="worklog.note" />
+                </div>
+              </div>
+            </div>
+
+            <div v-if="showWorklogs" class="comments">
+              <div v-if="(ticket.worklogs || []).length === 0" class="meta">Sin registros de tiempo aún.</div>
+              <div
+                v-for="worklog in ticket.worklogs || []"
+                :key="worklog.id || worklog.createdAt"
+                class="comment comment--elevated"
+              >
+                <span class="who">{{ worklog.author?.fullName || 'Usuario' }}</span>
+                <span class="when">{{ fmtDate(worklog.createdAt) }}</span>
+                <div class="body">
+                  {{ worklog.minutesSpent }} minutos<span v-if="worklog.note"> · {{ worklog.note }}</span>
                 </div>
               </div>
             </div>
           </div>
-        </article>
+          </article>
+
+          <article class="panel ticket-panel ticket-comments-side">
+            <div class="panel-header">
+              <div class="page-title">
+                <h2 style="font-size: 1.05rem">Comentarios</h2>
+                <p>Actualizaciones rápidas del equipo sobre el caso.</p>
+              </div>
+            </div>
+            <form class="ticket-inline-form comment-composer" @submit.prevent="addComment">
+              <div class="field-stack">
+                <label for="body">Nuevo comentario</label>
+                <RichTextEditor
+                  id="body"
+                  v-model="commentBody"
+                  compact
+                  placeholder="Escribe una actualización..."
+                  :disabled="isBusy"
+                />
+              </div>
+              <div class="actions-row" style="justify-content: space-between">
+                <input ref="commentFileInput" type="file" :disabled="isBusy" />
+                <button class="btn btn-ghost" type="button" :disabled="isBusy" @click="uploadAttachment">
+                  Subir archivo/foto
+                </button>
+              </div>
+              <button class="btn btn-primary" type="submit" :disabled="isBusy">
+                {{ isCommenting ? 'Publicando...' : 'Publicar' }}
+              </button>
+            </form>
+
+            <div class="comment-timeline">
+              <div v-if="(ticket.comments || []).length === 0" class="meta">Sin comentarios aún.</div>
+              <div
+                v-for="comment in ticket.comments || []"
+                :key="comment.id || comment.createdAt"
+                class="timeline-item timeline-item--comment"
+              >
+                <div class="timeline-item__dot"></div>
+                <div class="timeline-item__content">
+                  <div class="timeline-item__header">
+                    <strong>{{ comment.author?.fullName || 'Usuario' }}</strong>
+                    <div class="actions-row" style="gap: 0.45rem">
+                      <span>{{ fmtDate(comment.createdAt) }}</span>
+                      <button
+                        v-if="canDeleteComment(comment)"
+                        class="btn btn-ghost"
+                        type="button"
+                        :disabled="isBusy"
+                        @click="removeComment(comment)"
+                      >
+                        {{ deletingCommentId === String(comment.id) ? 'Eliminando...' : 'Eliminar' }}
+                      </button>
+                    </div>
+                  </div>
+                  <RichHtmlDisplay
+                    v-if="stripUrlsForDisplay(comment.body)"
+                    class="comment-rich-body"
+                    :html="stripUrlsForDisplay(comment.body)"
+                  />
+                  <p v-else class="meta">Adjunto sin texto</p>
+                  <div v-if="extractAttachments(comment.body).length" class="stack" style="margin-top: 0.5rem">
+                    <article
+                      v-for="attachment in extractAttachments(comment.body)"
+                      :key="attachment.url"
+                      class="panel"
+                      style="padding: 0.6rem"
+                    >
+                      <img
+                        v-if="attachment.isImage"
+                        :src="attachment.url"
+                        alt="Imagen adjunta"
+                        style="max-width: 100%; border-radius: 10px; margin-bottom: 0.5rem"
+                      />
+                      <div class="actions-row" style="justify-content: space-between">
+                        <a class="btn btn-ghost" :href="attachment.url" target="_blank" rel="noopener noreferrer">
+                          Ver
+                        </a>
+                        <a class="btn btn-primary" :href="attachment.url" download>
+                          Descargar
+                        </a>
+                      </div>
+                    </article>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
 
         <article v-if="activeWorkspaceTab === 'history'" class="panel ticket-panel">
           <div class="panel-header">
@@ -265,55 +304,6 @@
           </div>
         </article>
 
-        <article v-if="activeWorkspaceTab === 'overview'" class="panel ticket-panel">
-          <div class="panel-header">
-            <div class="page-title">
-              <h2 style="font-size: 1.05rem">Registro de tiempo</h2>
-              <p>Controla dedicación y contexto del trabajo invertido.</p>
-            </div>
-          </div>
-          <div class="comments">
-            <div v-if="(ticket.worklogs || []).length === 0" class="meta">Sin registros de tiempo aún.</div>
-            <div
-              v-for="worklog in ticket.worklogs || []"
-              :key="worklog.id || worklog.createdAt"
-              class="comment comment--elevated"
-            >
-              <span class="who">{{ worklog.author?.fullName || 'Usuario' }}</span>
-              <span class="when">{{ fmtDate(worklog.createdAt) }}</span>
-              <div class="body">
-                {{ worklog.minutesSpent }} minutos<span v-if="worklog.note"> · {{ worklog.note }}</span>
-              </div>
-            </div>
-          </div>
-          <div class="ticket-inline-form">
-            <p class="meta" style="margin: 0 0 0.6rem">
-              Para registrar tiempo, completa los minutos y usa “Guardar cambios”.
-            </p>
-            <div class="grid-2">
-              <div class="field-stack">
-                <label for="minutesSpent">Minutos trabajados</label>
-                <input
-                  id="minutesSpent"
-                  v-model.number="worklog.minutesSpent"
-                  type="number"
-                  min="1"
-                  max="1440"
-                  required
-                />
-              </div>
-              <div class="field-stack">
-                <label for="worklogNote">Nota (opcional)</label>
-                <input id="worklogNote" v-model="worklog.note" />
-              </div>
-            </div>
-            <div class="actions-row">
-              <button class="btn btn-primary" type="button" :disabled="isBusy || !showWorklogs" @click="saveTicket">
-                {{ isSaving ? 'Guardando...' : 'Guardar tiempo y cambios' }}
-              </button>
-            </div>
-          </div>
-        </article>
       </section>
     </template>
   </section>

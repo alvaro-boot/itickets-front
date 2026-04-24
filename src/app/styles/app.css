@@ -1249,6 +1249,22 @@ tbody tr:hover {
   gap: 1rem;
 }
 
+.ticket-overview-workspace {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+  align-items: start;
+}
+
+.ticket-comments-side {
+  position: sticky;
+  top: 0.2rem;
+}
+
+.ticket-time-inline {
+  margin-top: 0.2rem;
+}
+
 .ticket-sticky-actions {
   position: sticky;
   bottom: 0.2rem;
@@ -1396,6 +1412,14 @@ tbody tr:hover {
 @media (max-width: 1080px) {
   .ticket-detail-grid {
     grid-template-columns: 1fr;
+  }
+
+  .ticket-overview-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .ticket-comments-side {
+    position: static;
   }
 }
 
