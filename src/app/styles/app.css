@@ -41,7 +41,8 @@ body {
 }
 
 .shell-frame {
-  max-width: 1680px;
+  max-width: none;
+  width: 100%;
   margin: 0 auto;
   padding: 0 0.9rem 1rem;
 }

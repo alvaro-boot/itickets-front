@@ -72,7 +72,7 @@
       </section>
 
       <section class="ticket-workspace">
-        <article v-if="activeWorkspaceTab === 'data'" class="panel ticket-panel">
+        <article v-if="activeWorkspaceTab === 'overview'" class="panel ticket-panel">
           <div class="panel-header">
             <div class="page-title">
               <h2 style="font-size: 1.05rem">Datos principales</h2>
@@ -152,7 +152,7 @@
           </div>
         </article>
 
-        <article v-else-if="activeWorkspaceTab === 'comments'" class="panel ticket-panel">
+        <article v-if="activeWorkspaceTab === 'overview'" class="panel ticket-panel">
           <div class="panel-header">
             <div class="page-title">
               <h2 style="font-size: 1.05rem">Comentarios</h2>
@@ -239,7 +239,7 @@
           </div>
         </article>
 
-        <article v-else-if="activeWorkspaceTab === 'history'" class="panel ticket-panel">
+        <article v-if="activeWorkspaceTab === 'history'" class="panel ticket-panel">
           <div class="panel-header">
             <div class="page-title">
               <h2 style="font-size: 1.05rem">Historial de movimientos</h2>
@@ -265,7 +265,7 @@
           </div>
         </article>
 
-        <article v-else class="panel ticket-panel">
+        <article v-if="activeWorkspaceTab === 'overview'" class="panel ticket-panel">
           <div class="panel-header">
             <div class="page-title">
               <h2 style="font-size: 1.05rem">Registro de tiempo</h2>
@@ -347,7 +347,7 @@ const isSaving = ref(false);
 const isCommenting = ref(false);
 const isDuplicating = ref(false);
 const deletingCommentId = ref('');
-const activeWorkspaceTab = ref('data');
+const activeWorkspaceTab = ref('overview');
 const worklog = reactive({
   minutesSpent: null,
   note: '',
@@ -415,7 +415,6 @@ const SERVERLESS_SAFE_UPLOAD_BYTES = 4 * 1024 * 1024;
 const commentsCount = computed(() => ticket.value?.comments?.length || 0);
 const eventsCount = computed(() => ticket.value?.events?.length || 0);
 const totalLoggedMinutes = computed(() => Number(ticket.value?.totalLoggedMinutes || 0));
-const totalLoggedBadge = computed(() => `${totalLoggedMinutes.value}m`);
 
 const selectedStatusCode = computed(() => {
   const st = catalogs.statuses.find((status) => String(status.id) === String(form.statusId));
@@ -431,10 +430,8 @@ const isClosedStatus = computed(() => {
 
 const showWorklogs = computed(() => isClosedStatus.value);
 const workspaceTabs = computed(() => [
-  { key: 'data', label: 'Datos' },
-  { key: 'comments', label: 'Comentarios', count: commentsCount.value },
+  { key: 'overview', label: 'Datos, comentarios y tiempo', count: commentsCount.value },
   { key: 'history', label: 'Historial', count: eventsCount.value },
-  { key: 'time', label: 'Tiempo', count: totalLoggedBadge.value, disabled: !showWorklogs.value },
 ]);
 const isBusy = computed(
   () => isSaving.value || isCommenting.value || isDuplicating.value || Boolean(deletingCommentId.value),
@@ -671,14 +668,15 @@ onMounted(loadTicket);
 watch(
   () => route.params.id,
   () => {
-    activeWorkspaceTab.value = 'data';
+    activeWorkspaceTab.value = 'overview';
     loadTicket();
   },
 );
 
 watch(showWorklogs, (enabled) => {
-  if (!enabled && activeWorkspaceTab.value === 'time') {
-    activeWorkspaceTab.value = 'data';
+  if (!enabled && activeWorkspaceTab.value === 'overview') {
+    worklog.minutesSpent = null;
+    worklog.note = '';
   }
 });
 </script>
