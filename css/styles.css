@@ -98,6 +98,11 @@ body.auth-mode .app-shell {
   gap: 0.55rem;
   font-weight: 700;
   color: var(--text);
+  text-decoration: none;
+}
+
+a.brand:hover {
+  opacity: 0.92;
 }
 
 .brand-dot {
@@ -106,6 +111,55 @@ body.auth-mode .app-shell {
   border-radius: 999px;
   background: linear-gradient(120deg, var(--accent), var(--accent-2));
   box-shadow: 0 0 18px #6089ff;
+}
+
+.brand-icon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 12px;
+}
+
+.brand--login .brand-icon {
+  width: 44px;
+  height: 44px;
+}
+
+.brand-logo-img {
+  height: 28px;
+  width: auto;
+  max-width: min(220px, 46vw);
+  object-fit: contain;
+  object-position: left center;
+  display: block;
+}
+
+.brand-logo-img--login {
+  height: 34px;
+  max-width: min(280px, 72vw);
+}
+
+.brand-divider {
+  width: 1px;
+  height: 26px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.brand--login .brand-divider {
+  height: 30px;
+}
+
+.brand--shell .brand-logo-img {
+  height: 26px;
+  max-width: min(200px, 40vw);
+}
+
+@media (max-width: 520px) {
+  .brand--shell .brand-logo-img {
+    max-width: min(160px, 52vw);
+  }
 }
 
 .layout {

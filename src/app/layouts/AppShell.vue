@@ -2,9 +2,10 @@
   <div class="app-shell shell-frame">
     <header class="topbar">
       <div class="topbar-brand-block">
-        <RouterLink to="/tickets" class="brand">
-          <span class="brand-dot"></span>
-          <span>ITickets</span>
+        <RouterLink to="/tickets" class="brand brand--shell" aria-label="iTickets — inicio">
+          <img src="/images/icono.png" alt="" class="brand-icon" width="40" height="40" decoding="async" />
+          <span class="brand-divider" aria-hidden="true"></span>
+          <img src="/images/logo.png" alt="iTickets" class="brand-logo-img" decoding="async" />
         </RouterLink>
         <div class="topbar-brand-copy">
           <strong>Operations Desk</strong>

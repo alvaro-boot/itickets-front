@@ -1,9 +1,10 @@
 <template>
   <div class="login-page">
     <header class="login-page__header">
-      <div class="brand">
-        <span class="brand-dot"></span>
-        <span>ITickets</span>
+      <div class="brand brand--login" aria-label="iTickets">
+        <img src="/images/icono.png" alt="" class="brand-icon" width="44" height="44" decoding="async" />
+        <span class="brand-divider" aria-hidden="true"></span>
+        <img src="/images/logo.png" alt="iTickets" class="brand-logo-img brand-logo-img--login" decoding="async" />
       </div>
       <div class="login-page__header-copy">
         <strong>Service Control Hub</strong>

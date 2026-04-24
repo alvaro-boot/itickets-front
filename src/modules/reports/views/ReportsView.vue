@@ -145,22 +145,22 @@
     </div>
 
     <div class="panel">
-      <h3 style="margin: 0 0 0.6rem">Minutos por producto (tickets cerrados)</h3>
+      <h3 style="margin: 0 0 0.6rem">Horas por producto (tickets cerrados)</h3>
       <p class="meta" style="margin: 0 0 0.8rem">
-        Cantidad de minutos registrados por producto para tickets cerrados en el rango de fecha.
+        Cantidad de horas registradas por producto para tickets cerrados en el rango de fecha (enteras, sin decimales).
       </p>
       <div class="chart-bars">
         <div v-for="row in closedMinutesChart" :key="row.label" class="chart-row">
           <div class="chart-label">{{ row.label }}</div>
-          <div class="chart-track"><span :style="{ width: `${barPct(row.value, closedMinutesMax)}%` }"></span></div>
-          <div class="chart-value">{{ row.value }}</div>
+          <div class="chart-track"><span :style="{ width: `${barPct(row.value, closedHoursMax)}%` }"></span></div>
+          <div class="chart-value">{{ row.value }} h</div>
         </div>
         <p v-if="closedMinutesChart.length === 0" class="meta">Sin datos para graficar.</p>
       </div>
       <div style="margin-top: 1rem">
         <DataTable
           :rows="closedProductMinutesRows"
-          :columns="closedMinutesColumns"
+          :columns="closedHoursColumns"
           row-key="rowKey"
           empty-text="Sin datos para el rango seleccionado"
           :initial-page-size="10"
@@ -250,10 +250,10 @@ const statusColumns = [
   { key: 'name', label: 'Estado' },
   { key: 'count', label: 'Cantidad' },
 ];
-const closedMinutesColumns = [
+const closedHoursColumns = [
   { key: 'name', label: 'Producto' },
   { key: 'tickets', label: 'Tickets cerrados' },
-  { key: 'minutes', label: 'Minutos registrados' },
+  { key: 'hours', label: 'Horas registradas' },
 ];
 
 const assigneeData = computed(() =>
@@ -343,17 +343,17 @@ const closedProductMinutesRows = computed(() =>
   (distribution.value.closedProductMinutes || []).map((row) => ({
     ...row,
     rowKey: `closed-minutes-${row.name}`,
-    minutes: Number(row.minutes || 0),
+    hours: Math.round(Number(row.minutes || 0) / 60),
     tickets: Number(row.tickets || 0),
   })),
 );
-const closedMinutesMax = computed(() =>
-  closedProductMinutesRows.value.reduce((max, row) => Math.max(max, Number(row.minutes || 0)), 1),
+const closedHoursMax = computed(() =>
+  closedProductMinutesRows.value.reduce((max, row) => Math.max(max, Number(row.hours || 0)), 1),
 );
 const closedMinutesChart = computed(() =>
   closedProductMinutesRows.value.slice(0, 10).map((row) => ({
     label: row.name,
-    value: Number(row.minutes || 0),
+    value: Number(row.hours || 0),
   })),
 );
 
