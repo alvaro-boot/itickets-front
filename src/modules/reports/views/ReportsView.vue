@@ -145,6 +145,30 @@
     </div>
 
     <div class="panel">
+      <h3 style="margin: 0 0 0.6rem">Minutos por producto (tickets cerrados)</h3>
+      <p class="meta" style="margin: 0 0 0.8rem">
+        Cantidad de minutos registrados por producto para tickets cerrados en el rango de fecha.
+      </p>
+      <div class="chart-bars">
+        <div v-for="row in closedMinutesChart" :key="row.label" class="chart-row">
+          <div class="chart-label">{{ row.label }}</div>
+          <div class="chart-track"><span :style="{ width: `${barPct(row.value, closedMinutesMax)}%` }"></span></div>
+          <div class="chart-value">{{ row.value }}</div>
+        </div>
+        <p v-if="closedMinutesChart.length === 0" class="meta">Sin datos para graficar.</p>
+      </div>
+      <div style="margin-top: 1rem">
+        <DataTable
+          :rows="closedProductMinutesRows"
+          :columns="closedMinutesColumns"
+          row-key="rowKey"
+          empty-text="Sin datos para el rango seleccionado"
+          :initial-page-size="10"
+        />
+      </div>
+    </div>
+
+    <div class="panel">
       <h3 style="margin: 0 0 0.6rem">Detalle de resolución</h3>
       <DataTable
         :rows="resolutionTicketsRows"
@@ -210,7 +234,6 @@ const resolutionColumns = [
   { key: 'createdAtFmt', label: 'Creado' },
   { key: 'closedAtFmt', label: 'Cerrado' },
   { key: 'resolutionMinutes', label: 'Tiempo registrado (min)' },
-  { key: 'loggedMinutes', label: 'Tiempo trabajado (min)' },
 ];
 const usersColumns = [
   { key: 'fullName', label: 'Usuario' },
@@ -221,12 +244,16 @@ const dimensionColumns = [
   { key: 'name', label: 'Dimensión' },
   { key: 'count', label: 'Total' },
   { key: 'resolved', label: 'Solucionados' },
-  { key: 'unresolved', label: 'No solucionados' },
   { key: 'pending', label: 'Pendientes' },
 ];
 const statusColumns = [
   { key: 'name', label: 'Estado' },
   { key: 'count', label: 'Cantidad' },
+];
+const closedMinutesColumns = [
+  { key: 'name', label: 'Producto' },
+  { key: 'tickets', label: 'Tickets cerrados' },
+  { key: 'minutes', label: 'Minutos registrados' },
 ];
 
 const assigneeData = computed(() =>
@@ -290,7 +317,6 @@ const productRows = computed(() =>
     rowKey: `product-${row.name}`,
     count: Number(row.count || 0),
     resolved: Number(row.resolved || 0),
-    unresolved: Number(row.unresolved || 0),
     pending: Number(row.pending || 0),
   })),
 );
@@ -301,7 +327,6 @@ const typeRows = computed(() =>
     rowKey: `type-${row.name}`,
     count: Number(row.count || 0),
     resolved: Number(row.resolved || 0),
-    unresolved: Number(row.unresolved || 0),
     pending: Number(row.pending || 0),
   })),
 );
@@ -311,6 +336,24 @@ const statusRows = computed(() =>
     ...row,
     rowKey: `status-${row.name}`,
     count: Number(row.count || 0),
+  })),
+);
+
+const closedProductMinutesRows = computed(() =>
+  (distribution.value.closedProductMinutes || []).map((row) => ({
+    ...row,
+    rowKey: `closed-minutes-${row.name}`,
+    minutes: Number(row.minutes || 0),
+    tickets: Number(row.tickets || 0),
+  })),
+);
+const closedMinutesMax = computed(() =>
+  closedProductMinutesRows.value.reduce((max, row) => Math.max(max, Number(row.minutes || 0)), 1),
+);
+const closedMinutesChart = computed(() =>
+  closedProductMinutesRows.value.slice(0, 10).map((row) => ({
+    label: row.name,
+    value: Number(row.minutes || 0),
   })),
 );
 
