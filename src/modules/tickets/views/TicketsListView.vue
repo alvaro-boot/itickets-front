@@ -29,7 +29,7 @@
 
       <article class="stat-card">
         <p class="stat-card__label">Mis asignados</p>
-        <p class="stat-card__value">{{ activeTab === 'mine' ? total : '—' }}</p>
+        <p class="stat-card__value">{{ tabTotals.mine }}</p>
         <p class="stat-card__hint">Total en backend para la vista actual de asignados</p>
       </article>
     </div>
@@ -37,12 +37,12 @@
     <div class="stats-grid">
       <article class="stat-card">
         <p class="stat-card__label">No asignados</p>
-        <p class="stat-card__value">{{ activeTab === 'unassigned' ? total : '—' }}</p>
+        <p class="stat-card__value">{{ tabTotals.unassigned }}</p>
         <p class="stat-card__hint">Total en backend para la vista de no asignados</p>
       </article>
       <article class="stat-card">
         <p class="stat-card__label">Cerrados</p>
-        <p class="stat-card__value">{{ activeTab === 'closed' ? total : '—' }}</p>
+        <p class="stat-card__value">{{ tabTotals.closed }}</p>
         <p class="stat-card__hint">Total en backend para la vista de cerrados</p>
       </article>
       <article class="stat-card">
@@ -112,7 +112,7 @@
         type="button"
         @click="activeTab = tab.key"
       >
-        {{ tab.label }} <span class="badge">{{ activeTab === tab.key ? total : '—' }}</span>
+        {{ tab.label }} <span class="badge">{{ tabTotals[tab.key] }}</span>
       </button>
     </div>
 
@@ -146,7 +146,7 @@
             <td>
               <div class="table-title-cell">
                 <strong>
-                  <RouterLink :to="`/tickets/${ticket.id}`">{{ ticket.title }}</RouterLink>
+                  <RouterLink :to="{ path: `/tickets/${ticket.id}`, query: currentListQuery }">{{ ticket.title }}</RouterLink>
                 </strong>
                 <span>#{{ ticket.id }}</span>
               </div>
@@ -211,13 +211,15 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { RouterLink } from 'vue-router';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { ticketsService } from '../services/ticketsService';
 import { useCatalogs } from '../../../shared/composables/useCatalogs';
 import { useUi } from '../../../shared/composables/useUi';
 import { fmtDate, priorityClass } from '../../../shared/utils/format';
 
 const ui = useUi();
+const route = useRoute();
+const router = useRouter();
 const { fetchCatalogBundle } = useCatalogs();
 
 const loading = ref(false);
@@ -233,6 +235,12 @@ const activeTab = ref('all');
 const page = ref(1);
 const limit = ref(50);
 const total = ref(0);
+const tabTotals = ref({
+  all: 0,
+  mine: 0,
+  unassigned: 0,
+  closed: 0,
+});
 
 const tabs = [
   { key: 'all', label: 'Tickets en general' },
@@ -243,10 +251,98 @@ const tabs = [
 
 const visibleRows = computed(() => rows.value);
 const activeTabLabel = computed(() => tabs.find((tab) => tab.key === activeTab.value)?.label || 'General');
+const currentListQuery = computed(() => ({
+  q: query.value || undefined,
+  from: filters.from || undefined,
+  to: filters.to || undefined,
+  statusId: filters.statusId || undefined,
+  view: activeTab.value !== 'all' ? activeTab.value : undefined,
+  page: page.value > 1 ? String(page.value) : undefined,
+  limit: limit.value !== 50 ? String(limit.value) : undefined,
+}));
 
-async function loadTickets() {
+function parsePositiveInt(value, fallback) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return Math.floor(parsed);
+}
+
+function hydrateFromRouteQuery() {
+  query.value = String(route.query.q || '').trim();
+  filters.from = String(route.query.from || '').trim();
+  filters.to = String(route.query.to || '').trim();
+  filters.statusId = String(route.query.statusId || '').trim();
+  const incomingView = String(route.query.view || 'all').trim();
+  activeTab.value = tabs.some((tab) => tab.key === incomingView) ? incomingView : 'all';
+  page.value = parsePositiveInt(route.query.page, 1);
+  const incomingLimit = parsePositiveInt(route.query.limit, 50);
+  limit.value = [10, 25, 50].includes(incomingLimit) ? incomingLimit : 50;
+}
+
+async function replaceQueryFromState() {
+  await router.replace({
+    path: '/tickets',
+    query: currentListQuery.value,
+  });
+}
+
+async function loadTabTotals() {
+  try {
+    const [allRes, mineRes, unassignedRes, closedRes] = await Promise.all([
+      ticketsService.list({
+        q: query.value,
+        from: filters.from,
+        to: filters.to,
+        statusId: filters.statusId,
+        view: 'all',
+        page: 1,
+        limit: 1,
+      }),
+      ticketsService.list({
+        q: query.value,
+        from: filters.from,
+        to: filters.to,
+        statusId: filters.statusId,
+        view: 'mine',
+        page: 1,
+        limit: 1,
+      }),
+      ticketsService.list({
+        q: query.value,
+        from: filters.from,
+        to: filters.to,
+        statusId: filters.statusId,
+        view: 'unassigned',
+        page: 1,
+        limit: 1,
+      }),
+      ticketsService.list({
+        q: query.value,
+        from: filters.from,
+        to: filters.to,
+        statusId: filters.statusId,
+        view: 'closed',
+        page: 1,
+        limit: 1,
+      }),
+    ]);
+    tabTotals.value = {
+      all: Number(allRes?.total || 0),
+      mine: Number(mineRes?.total || 0),
+      unassigned: Number(unassignedRes?.total || 0),
+      closed: Number(closedRes?.total || 0),
+    };
+  } catch {
+    tabTotals.value = { all: 0, mine: 0, unassigned: 0, closed: 0 };
+  }
+}
+
+async function loadTickets({ syncRoute = false, refreshTotals = false } = {}) {
   loading.value = true;
   try {
+    if (syncRoute) {
+      await replaceQueryFromState();
+    }
     const payload = await ticketsService.list({
       q: query.value,
       from: filters.from,
@@ -258,6 +354,9 @@ async function loadTickets() {
     });
     rows.value = payload?.items || [];
     total.value = payload?.total || 0;
+    if (refreshTotals) {
+      await loadTabTotals();
+    }
   } catch (error) {
     ui.showToast(error.message || 'No se pudo cargar la lista.', true);
   } finally {
@@ -267,7 +366,7 @@ async function loadTickets() {
 
 function applyFilters() {
   page.value = 1;
-  loadTickets();
+  loadTickets({ syncRoute: true, refreshTotals: true });
 }
 
 function clearFilters() {
@@ -275,13 +374,14 @@ function clearFilters() {
   filters.from = '';
   filters.to = '';
   filters.statusId = '';
+  activeTab.value = 'all';
   page.value = 1;
-  loadTickets();
+  loadTickets({ syncRoute: true, refreshTotals: true });
 }
 
 function handleLimitChange() {
   page.value = 1;
-  loadTickets();
+  loadTickets({ syncRoute: true });
 }
 
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / limit.value)));
@@ -302,33 +402,34 @@ const pageButtons = computed(() => {
 
 function goToPage(p) {
   page.value = p;
-  loadTickets();
+  loadTickets({ syncRoute: true });
 }
 
 function prevPage() {
   if (page.value <= 1) return;
   page.value -= 1;
-  loadTickets();
+  loadTickets({ syncRoute: true });
 }
 
 function nextPage() {
   if (page.value >= totalPages.value) return;
   page.value += 1;
-  loadTickets();
+  loadTickets({ syncRoute: true });
 }
 
 onMounted(async () => {
+  hydrateFromRouteQuery();
   try {
     const bundle = await fetchCatalogBundle();
     statuses.value = bundle?.statuses || [];
   } catch {
     statuses.value = [];
   }
-  await loadTickets();
+  await loadTickets({ syncRoute: true, refreshTotals: true });
 });
 
 watch(activeTab, () => {
   page.value = 1;
-  loadTickets();
+  loadTickets({ syncRoute: true });
 });
 </script>
