@@ -58,7 +58,7 @@
       <article class="card">
         <p class="kpi-label">Promedio de resolución</p>
         <p class="kpi-value">{{ avgHours.toFixed(2) }} h</p>
-        <p class="kpi-sub">Aproximadamente {{ avgMinutes }} minutos por ticket</p>
+        <p class="kpi-sub">Aproximadamente {{ avgMinutes }} minutos registrados por ticket</p>
       </article>
       <article class="card">
         <p class="kpi-label">No solucionados</p>
@@ -209,7 +209,7 @@ const resolutionColumns = [
   { key: 'title', label: 'Ticket' },
   { key: 'createdAtFmt', label: 'Creado' },
   { key: 'closedAtFmt', label: 'Cerrado' },
-  { key: 'resolutionMinutes', label: 'Resolución (min)' },
+  { key: 'resolutionMinutes', label: 'Tiempo registrado (min)' },
   { key: 'loggedMinutes', label: 'Tiempo trabajado (min)' },
 ];
 const usersColumns = [
