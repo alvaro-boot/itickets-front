@@ -152,11 +152,6 @@ a.brand:hover {
   display: block;
 }
 
-.brand-logo-img--login {
-  height: clamp(72px, 14vw, 96px);
-  max-width: min(420px, 92vw);
-}
-
 @media (max-width: 520px) {
   .brand-icon--topbar {
     width: 48px;
@@ -166,11 +161,6 @@ a.brand:hover {
   .brand-icon--sidebar {
     width: 64px;
     height: 64px;
-  }
-
-  .brand-logo-img--login {
-    height: clamp(64px, 22vw, 88px);
-    max-width: min(360px, 94vw);
   }
 }
 

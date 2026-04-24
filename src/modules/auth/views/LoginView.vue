@@ -1,22 +1,10 @@
 <template>
   <div class="login-page">
-    <header class="login-page__header">
-      <div class="brand brand--login" aria-label="IT-Sistemas">
-        <img src="/images/logo.png" alt="IT-Sistemas" class="brand-logo-img brand-logo-img--login" width="360" height="96" decoding="async" />
-      </div>
-      <div class="login-page__header-copy">
-        <strong>Service Control Hub</strong>
-        <span>Operación, seguimiento y atención desde un solo lugar</span>
-      </div>
-    </header>
-
     <main class="login-page__main">
-      <section class="login-hero-card">
-        <p class="spotlight-card__eyebrow">Acceso seguro</p>
-        <h1 class="login-hero-card__title">Gestiona tickets, incidentes y reportes con una interfaz clara y profesional.</h1>
-        <p class="login-hero-card__copy">
-          Centraliza la operación del equipo, mejora la asignación de casos y mantén trazabilidad completa sobre cada solicitud.
-        </p>
+      <section class="login-hero-card login-hero-card--brand">
+        <div class="login-hero-brand">
+          <img src="/images/logo.png" alt="IT-Sistemas" class="login-hero-brand__logo" width="400" height="120" decoding="async" />
+        </div>
 
         <div class="login-hero-card__stats">
           <article class="login-mini-stat">
