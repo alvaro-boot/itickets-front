@@ -338,6 +338,7 @@ const isCommenting = ref(false);
 const isDuplicating = ref(false);
 const deletingCommentId = ref('');
 const activeWorkspaceTab = ref('overview');
+const DETAIL_ACTIVITY_LIMIT = 60;
 const worklog = reactive({
   minutesSpent: null,
   note: '',
@@ -395,15 +396,15 @@ const shortUpdatedAt = computed(() => {
 });
 
 const activityCount = computed(() => {
-  const events = ticket.value?.events?.length || 0;
-  const comments = ticket.value?.comments?.length || 0;
-  const worklogs = ticket.value?.worklogs?.length || 0;
+  const events = (ticket.value?.eventCount ?? ticket.value?.events?.length) || 0;
+  const comments = (ticket.value?.commentCount ?? ticket.value?.comments?.length) || 0;
+  const worklogs = (ticket.value?.worklogCount ?? ticket.value?.worklogs?.length) || 0;
   return events + comments + worklogs;
 });
 
 const SERVERLESS_SAFE_UPLOAD_BYTES = 4 * 1024 * 1024;
-const commentsCount = computed(() => ticket.value?.comments?.length || 0);
-const eventsCount = computed(() => ticket.value?.events?.length || 0);
+const commentsCount = computed(() => (ticket.value?.commentCount ?? ticket.value?.comments?.length) || 0);
+const eventsCount = computed(() => (ticket.value?.eventCount ?? ticket.value?.events?.length) || 0);
 const totalLoggedMinutes = computed(() => Number(ticket.value?.totalLoggedMinutes || 0));
 
 const selectedStatusCode = computed(() => {
@@ -463,8 +464,15 @@ function mergeTicketSnapshot(snapshot) {
   syncForm();
 }
 
-async function refreshTicketDataSoft() {
-  const fullSnapshot = await ticketsService.get(route.params.id);
+async function refreshTicketDataSoft(options = {}) {
+  const fullSnapshot = await ticketsService.get(route.params.id, {
+    includeComments: options.includeComments ?? true,
+    includeWorklogs: options.includeWorklogs ?? true,
+    includeEvents: options.includeEvents ?? activeWorkspaceTab.value === 'history',
+    commentsLimit: options.commentsLimit ?? DETAIL_ACTIVITY_LIMIT,
+    worklogsLimit: options.worklogsLimit ?? DETAIL_ACTIVITY_LIMIT,
+    eventsLimit: options.eventsLimit ?? DETAIL_ACTIVITY_LIMIT,
+  });
   mergeTicketSnapshot(fullSnapshot);
 }
 
@@ -472,7 +480,13 @@ async function loadTicket() {
   loading.value = true;
   try {
     const [ticketRow, catalogBundle, userList] = await Promise.all([
-      ticketsService.get(route.params.id),
+      ticketsService.get(route.params.id, {
+        includeComments: true,
+        includeWorklogs: true,
+        includeEvents: false,
+        commentsLimit: DETAIL_ACTIVITY_LIMIT,
+        worklogsLimit: DETAIL_ACTIVITY_LIMIT,
+      }),
       fetchCatalogBundle(),
       fetchUsersList(),
     ]);
@@ -504,8 +518,6 @@ async function saveTicket() {
   if (isBusy.value) return;
   isSaving.value = true;
   try {
-    const assigneeId = form.assigneeId || null;
-    await ticketsService.reassign(route.params.id, { assigneeId });
     await ticketsService.update(route.params.id, {
       title: form.title,
       description: form.description,
@@ -515,6 +527,7 @@ async function saveTicket() {
       ticketTypeId: form.ticketTypeId,
       areaId: form.areaId || null,
       requesterName: form.requesterName || null,
+      assigneeId: form.assigneeId || null,
     });
 
     // Registrar tiempo "en el mismo guardado" cuando el ticket está cerrado y el usuario ingresa minutos.
@@ -582,7 +595,7 @@ async function addComment() {
   commentBody.value = '';
   try {
     await ticketsService.comment(route.params.id, { body });
-    await refreshTicketDataSoft();
+    await refreshTicketDataSoft({ includeEvents: false });
   } catch (error) {
     // Si falla, vuelve al estado completo del servidor sin recargar toda la vista.
     const fallback = await ticketsService.get(route.params.id).catch(() => null);
@@ -669,4 +682,14 @@ watch(showWorklogs, (enabled) => {
     worklog.note = '';
   }
 });
+
+watch(
+  () => activeWorkspaceTab.value,
+  async (tab) => {
+    if (tab !== 'history') return;
+    const hasEventsLoaded = Array.isArray(ticket.value?.events) && ticket.value.events.length > 0;
+    if (hasEventsLoaded) return;
+    await refreshTicketDataSoft({ includeEvents: true });
+  },
+);
 </script>
