@@ -157,14 +157,23 @@
               </p>
               <div class="grid-2">
                 <div class="field-stack">
-                  <label for="minutesSpent">Minutos trabajados</label>
+                  <label for="worklogAmount">Tiempo trabajado</label>
                   <input
-                    id="minutesSpent"
-                    v-model.number="worklog.minutesSpent"
+                    id="worklogAmount"
+                    v-model.number="worklog.amount"
                     type="number"
                     min="1"
-                    max="1440"
+                    :step="worklog.unit === 'minutes' ? 1 : 0.25"
+                    :max="worklog.unit === 'days' ? 30 : worklog.unit === 'hours' ? 720 : 43200"
                   />
+                </div>
+                <div class="field-stack">
+                  <label for="worklogUnit">Unidad</label>
+                  <select id="worklogUnit" v-model="worklog.unit">
+                    <option value="days">Días</option>
+                    <option value="hours">Horas</option>
+                    <option value="minutes">Minutos</option>
+                  </select>
                 </div>
                 <div class="field-stack">
                   <label for="worklogNote">Nota (opcional)</label>
@@ -340,7 +349,8 @@ const deletingCommentId = ref('');
 const activeWorkspaceTab = ref('overview');
 const DETAIL_ACTIVITY_LIMIT = 60;
 const worklog = reactive({
-  minutesSpent: null,
+  amount: null,
+  unit: 'minutes',
   note: '',
 });
 const catalogs = reactive({
@@ -406,6 +416,13 @@ const SERVERLESS_SAFE_UPLOAD_BYTES = 4 * 1024 * 1024;
 const commentsCount = computed(() => (ticket.value?.commentCount ?? ticket.value?.comments?.length) || 0);
 const eventsCount = computed(() => (ticket.value?.eventCount ?? ticket.value?.events?.length) || 0);
 const totalLoggedMinutes = computed(() => Number(ticket.value?.totalLoggedMinutes || 0));
+const worklogMinutes = computed(() => {
+  const amount = Number(worklog.amount);
+  if (Number.isNaN(amount) || amount <= 0) return 0;
+  if (worklog.unit === 'days') return Math.round(amount * 1440);
+  if (worklog.unit === 'hours') return Math.round(amount * 60);
+  return Math.round(amount);
+});
 
 const selectedStatusCode = computed(() => {
   const st = catalogs.statuses.find((status) => String(status.id) === String(form.statusId));
@@ -537,13 +554,14 @@ async function saveTicket() {
 
     // Registrar tiempo "en el mismo guardado" cuando el ticket está cerrado y el usuario ingresa minutos.
     if (showWorklogs.value) {
-      const minutes = Number(worklog.minutesSpent);
-      if (!Number.isNaN(minutes) && minutes > 0) {
+      const minutes = worklogMinutes.value;
+      if (minutes > 0) {
         await ticketsService.addWorklog(route.params.id, {
           minutesSpent: minutes,
           note: worklog.note || undefined,
         });
-        worklog.minutesSpent = null;
+        worklog.amount = null;
+        worklog.unit = 'minutes';
         worklog.note = '';
       }
     }
@@ -683,7 +701,8 @@ watch(
 
 watch(showWorklogs, (enabled) => {
   if (!enabled && activeWorkspaceTab.value === 'overview') {
-    worklog.minutesSpent = null;
+    worklog.amount = null;
+    worklog.unit = 'minutes';
     worklog.note = '';
   }
 });
