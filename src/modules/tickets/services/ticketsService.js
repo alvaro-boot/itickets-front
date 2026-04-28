@@ -31,6 +31,8 @@ export const ticketsService = {
     request('/tickets', { method: 'POST', body: JSON.stringify(body) }, { showLoader: true }),
   duplicate: (id, body) =>
     request(`/tickets/${id}/duplicate`, { method: 'POST', body: JSON.stringify(body) }, { showLoader: true }),
+  createSubtickets: (id, body) =>
+    request(`/tickets/${id}/subtickets`, { method: 'POST', body: JSON.stringify(body) }, { showLoader: true }),
   update: (id, body) => request(`/tickets/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   comment: (id, body) => request(`/tickets/${id}/comments`, { method: 'POST', body: JSON.stringify(body) }),
   deleteComment: (id, commentId) => request(`/tickets/${id}/comments/${commentId}`, { method: 'DELETE' }),

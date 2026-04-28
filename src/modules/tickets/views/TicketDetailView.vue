@@ -141,10 +141,17 @@
                   </select>
                   <p v-if="assignableUsers.length === 0" class="meta">No tienes permiso para reasignar usuarios.</p>
                 </div>
+                <div class="field-stack">
+                  <label for="subticketQuantity">Cantidad de subtickets</label>
+                  <input id="subticketQuantity" v-model.number="subticketQuantity" type="number" min="1" max="20" />
+                </div>
             </div>
             <div class="actions-row ticket-sticky-actions">
               <button class="btn btn-primary" type="button" :disabled="isBusy" @click="saveTicket">
                 {{ isSaving ? 'Guardando...' : 'Guardar cambios' }}
+              </button>
+              <button class="btn btn-ghost" type="button" :disabled="isBusy" @click="createSubtickets">
+                {{ isCreatingSubtickets ? 'Creando subtickets...' : 'Crear subtickets' }}
               </button>
               <button class="btn btn-ghost" type="button" :disabled="isBusy" @click="duplicateTicket">
                 {{ isDuplicating ? 'Duplicando...' : 'Duplicar y asignar' }}
@@ -345,6 +352,8 @@ const commentFileInput = ref(null);
 const isSaving = ref(false);
 const isCommenting = ref(false);
 const isDuplicating = ref(false);
+const isCreatingSubtickets = ref(false);
+const subticketQuantity = ref(1);
 const deletingCommentId = ref('');
 const activeWorkspaceTab = ref('overview');
 const DETAIL_ACTIVITY_LIMIT = 60;
@@ -442,12 +451,18 @@ const workspaceTabs = computed(() => [
   { key: 'history', label: 'Historial', count: eventsCount.value },
 ]);
 const isBusy = computed(
-  () => isSaving.value || isCommenting.value || isDuplicating.value || Boolean(deletingCommentId.value),
+  () =>
+    isSaving.value ||
+    isCommenting.value ||
+    isDuplicating.value ||
+    isCreatingSubtickets.value ||
+    Boolean(deletingCommentId.value),
 );
 const busyMessage = computed(() => {
   if (isSaving.value) return 'Guardando cambios del ticket...';
   if (isCommenting.value) return 'Publicando comentario...';
   if (isDuplicating.value) return 'Duplicando ticket...';
+  if (isCreatingSubtickets.value) return 'Creando subtickets...';
   return 'Cargando...';
 });
 
@@ -590,6 +605,25 @@ async function duplicateTicket() {
     ui.showToast(error.message || 'No se pudo duplicar el ticket.', true);
   } finally {
     isDuplicating.value = false;
+  }
+}
+
+async function createSubtickets() {
+  if (isBusy.value) return;
+  const quantity = Math.min(20, Math.max(1, Number(subticketQuantity.value) || 1));
+  isCreatingSubtickets.value = true;
+  try {
+    const result = await ticketsService.createSubtickets(route.params.id, {
+      assigneeId: form.assigneeId || undefined,
+      quantity,
+    });
+    const createdIds = (result?.items || []).map((item) => `#${item.id}`).join(', ');
+    ui.showToast(`Subtickets creados (${result?.quantity || quantity}): ${createdIds}`, false);
+    await refreshTicketDataSoft({ includeEvents: true });
+  } catch (error) {
+    ui.showToast(error.message || 'No se pudieron crear los subtickets.', true);
+  } finally {
+    isCreatingSubtickets.value = false;
   }
 }
 
