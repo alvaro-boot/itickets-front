@@ -157,6 +157,9 @@
         </div>
         <p v-if="closedMinutesChart.length === 0" class="meta">Sin datos para graficar.</p>
       </div>
+      <p class="kpi-sub" style="margin-top: 0.7rem">
+        Total horas (suma por producto): <strong>{{ totalClosedHours }} h</strong>
+      </p>
       <div style="margin-top: 1rem">
         <DataTable
           :rows="closedProductMinutesRows"
@@ -355,6 +358,9 @@ const closedMinutesChart = computed(() =>
     label: row.name,
     value: Number(row.hours || 0),
   })),
+);
+const totalClosedHours = computed(() =>
+  closedProductMinutesRows.value.reduce((sum, row) => sum + Number(row.hours || 0), 0),
 );
 
 function barPct(value, max) {
