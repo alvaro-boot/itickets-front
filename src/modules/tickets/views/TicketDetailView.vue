@@ -384,7 +384,8 @@ const form = reactive({
 function extractAttachments(body) {
   const text = String(body || '');
   const matches = text.match(/https?:\/\/[^\s)]+/g) || [];
-  return matches.map((url) => {
+  return matches.map((rawUrl) => {
+    const url = normalizeAttachmentUrl(rawUrl);
     const lower = url.toLowerCase();
     const isImage =
       lower.includes('/imagenes/') ||
@@ -392,6 +393,32 @@ function extractAttachments(body) {
       /[?&](format|ext)=(png|jpg|jpeg|gif|webp|svg|bmp)/i.test(lower);
     return { url, isImage };
   });
+}
+
+function normalizeAttachmentUrl(rawUrl) {
+  const source = String(rawUrl || '').trim();
+  if (!source) return source;
+  try {
+    const parsed = new URL(source);
+    const signPrefix = '/storage/v1/object/sign/';
+    const signIndex = parsed.pathname.indexOf(signPrefix);
+    if (signIndex === -1) return source;
+
+    const signedObjectPath = parsed.pathname.slice(signIndex + signPrefix.length);
+    const slashIndex = signedObjectPath.indexOf('/');
+    if (slashIndex <= 0) return source;
+
+    const bucket = signedObjectPath.slice(0, slashIndex);
+    const key = signedObjectPath.slice(slashIndex + 1);
+    if (!bucket || !key) return source;
+
+    // En buckets publicos, la URL /public/... no expira y evita ExpiredToken.
+    parsed.pathname = `/storage/v1/object/public/${bucket}/${key}`;
+    parsed.search = '';
+    return parsed.toString();
+  } catch {
+    return source;
+  }
 }
 
 const selectedStatusName = computed(
