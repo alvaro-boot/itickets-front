@@ -267,24 +267,39 @@
                   <p v-else class="meta">Adjunto sin texto</p>
                   <div v-if="extractAttachments(comment.body).length" class="stack" style="margin-top: 0.5rem">
                     <article
-                      v-for="attachment in extractAttachments(comment.body)"
-                      :key="attachment.url"
+                      v-for="(attachment, attIdx) in extractAttachments(comment.body)"
+                      :key="`${String(comment.id)}-${attIdx}`"
                       class="panel"
                       style="padding: 0.6rem"
                     >
-                      <img
-                        v-if="attachment.isImage"
-                        :src="attachment.url"
-                        alt="Imagen adjunta"
-                        style="max-width: 100%; border-radius: 10px; margin-bottom: 0.5rem"
-                      />
+                      <template v-if="attachment.isImage">
+                        <img
+                          v-if="resolvedImageSrc[attachmentPreviewKey(comment, attIdx)]"
+                          :src="resolvedImageSrc[attachmentPreviewKey(comment, attIdx)]"
+                          alt="Imagen adjunta"
+                          style="max-width: 100%; border-radius: 10px; margin-bottom: 0.5rem"
+                          @error="onAttachmentImageError(comment, attIdx)"
+                        />
+                        <p
+                          v-else-if="resolvedImageSrc[attachmentPreviewKey(comment, attIdx)] === ''"
+                          class="meta"
+                          style="margin-bottom: 0.5rem"
+                        >
+                          No se pudo mostrar la vista previa. Usa «Ver» para abrir la imagen.
+                        </p>
+                        <p v-else class="meta" style="margin-bottom: 0.5rem">Cargando vista previa…</p>
+                      </template>
                       <div class="actions-row" style="justify-content: space-between">
-                        <a class="btn btn-ghost" :href="attachment.url" target="_blank" rel="noopener noreferrer">
+                        <button type="button" class="btn btn-ghost" @click="openStoredAttachment(attachment.storedUrl, 'tab')">
                           Ver
-                        </a>
-                        <a class="btn btn-primary" :href="attachment.url" download>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-primary"
+                          @click="openStoredAttachment(attachment.storedUrl, 'download')"
+                        >
                           Descargar
-                        </a>
+                        </button>
                       </div>
                     </article>
                   </div>
@@ -349,6 +364,8 @@ const ticket = ref(null);
 const assignableUsers = ref([]);
 const commentBody = ref('');
 const commentFileInput = ref(null);
+/** URLs de vista previa por comentario+índice (clave distinta a cada GET /uploads/view-url). */
+const resolvedImageSrc = reactive({});
 const isSaving = ref(false);
 const isCommenting = ref(false);
 const isDuplicating = ref(false);
@@ -385,40 +402,46 @@ function extractAttachments(body) {
   const text = String(body || '');
   const matches = text.match(/https?:\/\/[^\s)]+/g) || [];
   return matches.map((rawUrl) => {
-    const url = normalizeAttachmentUrl(rawUrl);
-    const lower = url.toLowerCase();
+    const storedUrl = String(rawUrl || '').trim();
+    const lower = storedUrl.toLowerCase();
     const isImage =
       lower.includes('/imagenes/') ||
       /\.(png|jpe?g|gif|webp|svg|bmp)(\?|#|$)/i.test(lower) ||
       /[?&](format|ext)=(png|jpg|jpeg|gif|webp|svg|bmp)/i.test(lower);
-    return { url, isImage };
+    return { storedUrl, isImage };
   });
 }
 
-function normalizeAttachmentUrl(rawUrl) {
-  const source = String(rawUrl || '').trim();
-  if (!source) return source;
+function attachmentPreviewKey(comment, attIdx) {
+  return `${String(comment.id)}-${attIdx}`;
+}
+
+async function openStoredAttachment(storedUrl, mode) {
+  const s = String(storedUrl || '').trim();
+  if (!s) return;
   try {
-    const parsed = new URL(source);
-    const signPrefix = '/storage/v1/object/sign/';
-    const signIndex = parsed.pathname.indexOf(signPrefix);
-    if (signIndex === -1) return source;
-
-    const signedObjectPath = parsed.pathname.slice(signIndex + signPrefix.length);
-    const slashIndex = signedObjectPath.indexOf('/');
-    if (slashIndex <= 0) return source;
-
-    const bucket = signedObjectPath.slice(0, slashIndex);
-    const key = signedObjectPath.slice(slashIndex + 1);
-    if (!bucket || !key) return source;
-
-    // En buckets publicos, la URL /public/... no expira y evita ExpiredToken.
-    parsed.pathname = `/storage/v1/object/public/${bucket}/${key}`;
-    parsed.search = '';
-    return parsed.toString();
-  } catch {
-    return source;
+    const result = await uploadsService.getViewUrl(s);
+    const url = result?.url;
+    if (!url) throw new Error('Respuesta inválida del servidor');
+    if (mode === 'download') {
+      const a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.download = '';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } else {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  } catch (error) {
+    ui.showToast(error.message || 'No se pudo abrir el adjunto.', true);
   }
+}
+
+function onAttachmentImageError(comment, attIdx) {
+  resolvedImageSrc[attachmentPreviewKey(comment, attIdx)] = '';
 }
 
 const selectedStatusName = computed(
@@ -555,6 +578,7 @@ async function loadTicket() {
       fetchUsersList(),
     ]);
 
+    Object.keys(resolvedImageSrc).forEach((k) => delete resolvedImageSrc[k]);
     ticket.value = ticketRow;
     Object.assign(catalogs, catalogBundle);
 
@@ -749,6 +773,34 @@ async function uploadAttachment() {
     ui.showToast(error.message || 'No se pudo subir el archivo.', true);
   }
 }
+
+watch(
+  () => ticket.value?.comments,
+  async (comments) => {
+    if (!comments?.length) return;
+    const tasks = [];
+    for (const comment of comments) {
+      const atts = extractAttachments(comment.body);
+      atts.forEach((att, attIdx) => {
+        if (!att.isImage) return;
+        const key = attachmentPreviewKey(comment, attIdx);
+        if (resolvedImageSrc[key] !== undefined) return;
+        tasks.push(
+          uploadsService
+            .getViewUrl(att.storedUrl)
+            .then((res) => {
+              resolvedImageSrc[key] = res?.url || '';
+            })
+            .catch(() => {
+              resolvedImageSrc[key] = '';
+            }),
+        );
+      });
+    }
+    await Promise.all(tasks);
+  },
+  { deep: true, immediate: true },
+);
 
 onMounted(loadTicket);
 
