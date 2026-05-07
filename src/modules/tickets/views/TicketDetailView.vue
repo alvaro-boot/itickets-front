@@ -131,6 +131,14 @@
                     placeholder="Nombre completo del solicitante"
                   />
                 </div>
+                <div class="field-stack">
+                  <label for="requesterPhone">Telefono de quien solicita (opcional)</label>
+                  <input
+                    id="requesterPhone"
+                    v-model.trim="form.requesterPhone"
+                    placeholder="Ej: 3001234567"
+                  />
+                </div>
                 <div class="field-stack" style="grid-column: 1 / -1">
                   <label for="assigneeId">Asignado a</label>
                   <select id="assigneeId" v-model="form.assigneeId">
@@ -395,6 +403,7 @@ const form = reactive({
   ticketTypeId: '',
   areaId: '',
   requesterName: '',
+  requesterPhone: '',
   assigneeId: '',
 });
 
@@ -531,6 +540,7 @@ function syncForm() {
   form.ticketTypeId = ticket.value.ticketTypeId || '';
   form.areaId = ticket.value.areaId || '';
   form.requesterName = ticket.value.requesterName || '';
+  form.requesterPhone = ticket.value.requesterPhone || '';
   form.assigneeId = ticket.value.assigneeId == null ? '' : String(ticket.value.assigneeId);
 }
 
@@ -615,6 +625,7 @@ async function saveTicket() {
       ticketTypeId: form.ticketTypeId,
       areaId: form.areaId || null,
       requesterName: form.requesterName || null,
+      requesterPhone: form.requesterPhone || null,
       assigneeId: form.assigneeId || null,
     });
 

@@ -84,6 +84,14 @@
                 placeholder="Nombre completo del solicitante"
               />
             </div>
+            <div class="field-stack">
+              <label for="requesterPhone">Telefono de quien solicita (opcional)</label>
+              <input
+                id="requesterPhone"
+                v-model.trim="form.requesterPhone"
+                placeholder="Ej: 3001234567"
+              />
+            </div>
             <div class="field-stack" style="grid-column: 1 / -1">
               <label for="assigneeId">Asignar a (opcional)</label>
               <select id="assigneeId" v-model="form.assigneeId" :disabled="users.length === 0">
@@ -168,6 +176,7 @@ const form = reactive({
   ticketTypeId: '',
   areaId: '',
   requesterName: '',
+  requesterPhone: '',
   assigneeId: '',
 });
 
@@ -197,6 +206,7 @@ async function submit() {
       ticketTypeId: form.ticketTypeId,
       areaId: form.areaId,
       requesterName: form.requesterName,
+      requesterPhone: form.requesterPhone || undefined,
       assigneeId: form.assigneeId || undefined,
     });
     const files = Array.from(attachmentsInput.value?.files || []);
