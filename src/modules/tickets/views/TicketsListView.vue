@@ -37,11 +37,11 @@
         </div>
 
         <div class="field-stack search-panel__field">
-          <label for="statusId">Estado</label>
-          <select id="statusId" v-model="filters.statusId">
+          <label for="productId">Producto</label>
+          <select id="productId" v-model="filters.productId">
             <option value="">Todos</option>
-            <option v-for="status in statuses" :key="status.id" :value="status.id">
-              {{ status.name }}
+            <option v-for="product in products" :key="product.id" :value="product.id">
+              {{ product.name }}
             </option>
           </select>
         </div>
@@ -70,11 +70,61 @@
       <table>
         <thead>
           <tr>
-            <th>Título</th>
-            <th>Estado</th>
-            <th>Prioridad</th>
-            <th>Asignado a</th>
-            <th>Actualizado</th>
+            <th>
+              <button
+                type="button"
+                class="datatable__sort-btn"
+                :class="{ 'datatable__sort-btn--active': sortBy === 'title' }"
+                @click="toggleSort('title')"
+              >
+                <span>Título</span>
+                <span class="datatable__sort-indicator">{{ sortIndicator('title') }}</span>
+              </button>
+            </th>
+            <th>
+              <button
+                type="button"
+                class="datatable__sort-btn"
+                :class="{ 'datatable__sort-btn--active': sortBy === 'product' }"
+                @click="toggleSort('product')"
+              >
+                <span>Producto</span>
+                <span class="datatable__sort-indicator">{{ sortIndicator('product') }}</span>
+              </button>
+            </th>
+            <th>
+              <button
+                type="button"
+                class="datatable__sort-btn"
+                :class="{ 'datatable__sort-btn--active': sortBy === 'priority' }"
+                @click="toggleSort('priority')"
+              >
+                <span>Prioridad</span>
+                <span class="datatable__sort-indicator">{{ sortIndicator('priority') }}</span>
+              </button>
+            </th>
+            <th>
+              <button
+                type="button"
+                class="datatable__sort-btn"
+                :class="{ 'datatable__sort-btn--active': sortBy === 'assignee' }"
+                @click="toggleSort('assignee')"
+              >
+                <span>Asignado a</span>
+                <span class="datatable__sort-indicator">{{ sortIndicator('assignee') }}</span>
+              </button>
+            </th>
+            <th>
+              <button
+                type="button"
+                class="datatable__sort-btn"
+                :class="{ 'datatable__sort-btn--active': sortBy === 'updatedAt' }"
+                @click="toggleSort('updatedAt')"
+              >
+                <span>Actualizado</span>
+                <span class="datatable__sort-indicator">{{ sortIndicator('updatedAt') }}</span>
+              </button>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -102,10 +152,7 @@
               </div>
             </td>
             <td>
-              <span class="status-pill">
-                <span class="status-dot"></span>
-                {{ ticket.status?.name || '' }}
-              </span>
+              {{ ticket.product?.name || 'Sin producto' }}
             </td>
             <td><span :class="priorityClass(ticket.priority?.level)">{{ ticket.priority?.name || '' }}</span></td>
             <td>{{ ticket.assignee?.fullName || ticket.assignee?.email || 'Sin asignar' }}</td>
@@ -177,13 +224,15 @@ const query = ref('');
 const filters = reactive({
   from: '',
   to: '',
-  statusId: '',
+  productId: '',
 });
 const rows = ref([]);
-const statuses = ref([]);
+const products = ref([]);
 const activeTab = ref('all');
 const page = ref(1);
 const limit = ref(50);
+const sortBy = ref('updatedAt');
+const sortDir = ref('desc');
 const total = ref(0);
 const tabTotals = ref({
   all: 0,
@@ -204,7 +253,12 @@ const currentListQuery = computed(() => ({
   q: query.value || undefined,
   from: filters.from || undefined,
   to: filters.to || undefined,
-  statusId: filters.statusId || undefined,
+  productId: filters.productId || undefined,
+  sortBy: sortBy.value !== 'updatedAt' ? sortBy.value : undefined,
+  sortDir:
+    (sortBy.value !== 'updatedAt' || sortDir.value !== 'desc')
+      ? sortDir.value
+      : undefined,
   view: activeTab.value !== 'all' ? activeTab.value : undefined,
   page: page.value > 1 ? String(page.value) : undefined,
   limit: limit.value !== 50 ? String(limit.value) : undefined,
@@ -220,12 +274,17 @@ function hydrateFromRouteQuery() {
   query.value = String(route.query.q || '').trim();
   filters.from = String(route.query.from || '').trim();
   filters.to = String(route.query.to || '').trim();
-  filters.statusId = String(route.query.statusId || '').trim();
+  filters.productId = String(route.query.productId || '').trim();
   const incomingView = String(route.query.view || 'all').trim();
   activeTab.value = tabs.some((tab) => tab.key === incomingView) ? incomingView : 'all';
   page.value = parsePositiveInt(route.query.page, 1);
   const incomingLimit = parsePositiveInt(route.query.limit, 50);
   limit.value = [10, 25, 50].includes(incomingLimit) ? incomingLimit : 50;
+  const incomingSortBy = String(route.query.sortBy || 'updatedAt').trim();
+  const allowedSortBy = ['title', 'product', 'priority', 'assignee', 'updatedAt'];
+  sortBy.value = allowedSortBy.includes(incomingSortBy) ? incomingSortBy : 'updatedAt';
+  const incomingSortDir = String(route.query.sortDir || 'desc').trim().toLowerCase();
+  sortDir.value = incomingSortDir === 'asc' ? 'asc' : 'desc';
 }
 
 async function replaceQueryFromState() {
@@ -242,7 +301,7 @@ async function loadTabTotals() {
         q: query.value,
         from: filters.from,
         to: filters.to,
-        statusId: filters.statusId,
+        productId: filters.productId,
         view: 'all',
         page: 1,
         limit: 1,
@@ -251,7 +310,7 @@ async function loadTabTotals() {
         q: query.value,
         from: filters.from,
         to: filters.to,
-        statusId: filters.statusId,
+        productId: filters.productId,
         view: 'mine',
         page: 1,
         limit: 1,
@@ -260,7 +319,7 @@ async function loadTabTotals() {
         q: query.value,
         from: filters.from,
         to: filters.to,
-        statusId: filters.statusId,
+        productId: filters.productId,
         view: 'unassigned',
         page: 1,
         limit: 1,
@@ -269,7 +328,7 @@ async function loadTabTotals() {
         q: query.value,
         from: filters.from,
         to: filters.to,
-        statusId: filters.statusId,
+        productId: filters.productId,
         view: 'closed',
         page: 1,
         limit: 1,
@@ -296,7 +355,9 @@ async function loadTickets({ syncRoute = false, refreshTotals = false } = {}) {
       q: query.value,
       from: filters.from,
       to: filters.to,
-      statusId: filters.statusId,
+      productId: filters.productId,
+      sortBy: sortBy.value,
+      sortDir: sortDir.value,
       view: activeTab.value,
       page: page.value,
       limit: limit.value,
@@ -322,10 +383,28 @@ function clearFilters() {
   query.value = '';
   filters.from = '';
   filters.to = '';
-  filters.statusId = '';
+  filters.productId = '';
+  sortBy.value = 'updatedAt';
+  sortDir.value = 'desc';
   activeTab.value = 'all';
   page.value = 1;
   loadTickets({ syncRoute: true, refreshTotals: true });
+}
+
+function toggleSort(column) {
+  if (sortBy.value !== column) {
+    sortBy.value = column;
+    sortDir.value = 'asc';
+  } else {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc';
+  }
+  page.value = 1;
+  loadTickets({ syncRoute: true });
+}
+
+function sortIndicator(column) {
+  if (sortBy.value !== column) return '↕';
+  return sortDir.value === 'asc' ? '▲' : '▼';
 }
 
 function handleLimitChange() {
@@ -370,9 +449,9 @@ onMounted(async () => {
   hydrateFromRouteQuery();
   try {
     const bundle = await fetchCatalogBundle();
-    statuses.value = bundle?.statuses || [];
+    products.value = bundle?.products || [];
   } catch {
-    statuses.value = [];
+    products.value = [];
   }
   await loadTickets({ syncRoute: true, refreshTotals: true });
 });
