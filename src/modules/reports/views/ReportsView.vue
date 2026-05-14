@@ -235,7 +235,7 @@ const statuses = ref([]);
 const resolutionColumns = [
   { key: 'title', label: 'Ticket' },
   { key: 'createdAtFmt', label: 'Creado' },
-  { key: 'closedAtFmt', label: 'Cerrado' },
+  { key: 'closedAtFmt', label: 'Fecha de solución' },
   { key: 'resolutionMinutes', label: 'Tiempo registrado (min)' },
 ];
 const usersColumns = [

@@ -49,6 +49,11 @@
           <p class="stat-card__value">{{ shortUpdatedAt }}</p>
           <p class="stat-card__hint">Último cambio documentado sobre el caso</p>
         </article>
+        <article v-if="isClosedStatus" class="stat-card">
+          <p class="stat-card__label">Fecha de solución</p>
+          <p class="stat-card__value">{{ solutionDateLabel }}</p>
+          <p class="stat-card__hint">Fecha usada en reportes (puedes corregirla en datos principales si el cierre fue atrasado)</p>
+        </article>
         <article class="stat-card">
           <p class="stat-card__label">Actividad</p>
           <p class="stat-card__value">{{ activityCount }}</p>
@@ -95,6 +100,13 @@
                   <select id="statusId" v-model="form.statusId">
                     <option v-for="status in catalogs.statuses" :key="status.id" :value="status.id">{{ status.name }}</option>
                   </select>
+                </div>
+                <div v-if="selectedStatusIsFinal" class="field-stack">
+                  <label for="resolvedAt">Fecha de solución (reportes)</label>
+                  <input id="resolvedAt" v-model="form.resolvedAt" type="date" />
+                  <p class="meta" style="margin: 0">
+                    Día en que el caso quedó resuelto. Si lo cierras hoy pero ocurrió antes, elige esa fecha; si lo dejas vacío al primer cierre, se usa la fecha de hoy.
+                  </p>
                 </div>
                 <div class="field-stack">
                   <label for="priorityId">Prioridad</label>
@@ -398,6 +410,8 @@ const form = reactive({
   title: '',
   description: '',
   statusId: '',
+  /** YYYY-MM-DD para fecha de solución (estados finales). */
+  resolvedAt: '',
   priorityId: '',
   productId: '',
   ticketTypeId: '',
@@ -457,6 +471,11 @@ const selectedStatusName = computed(
   () => catalogs.statuses.find((status) => String(status.id) === String(form.statusId))?.name || ticket.value?.status?.name || 'Sin estado',
 );
 
+const selectedStatusIsFinal = computed(() => {
+  const st = catalogs.statuses.find((status) => String(status.id) === String(form.statusId));
+  return Boolean(st?.isFinal);
+});
+
 const selectedPriorityName = computed(
   () =>
     catalogs.priorities.find((priority) => String(priority.id) === String(form.priorityId))?.name ||
@@ -471,6 +490,12 @@ const shortUpdatedAt = computed(() => {
   } catch {
     return String(ticket.value.updatedAt);
   }
+});
+
+const solutionDateLabel = computed(() => {
+  const raw = ticket.value?.resolvedAt || ticket.value?.closedAt;
+  if (!raw) return '—';
+  return fmtDate(raw);
 });
 
 const activityCount = computed(() => {
@@ -498,7 +523,7 @@ const selectedStatusCode = computed(() => {
 });
 
 const isClosedStatus = computed(() => {
-  if (ticket.value?.closedAt) return true;
+  if (ticket.value?.closedAt || ticket.value?.resolvedAt) return true;
   const name = String(selectedStatusName.value || '').toLowerCase();
   const code = String(selectedStatusCode.value || '').toLowerCase();
   return name.includes('cerrad') || code.includes('closed');
@@ -530,11 +555,23 @@ const backToListTarget = computed(() => {
   return Object.keys(query).length ? { path: '/tickets', query } : { path: '/tickets' };
 });
 
+function toIsoDateOnly(value) {
+  if (!value) return '';
+  try {
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toISOString().slice(0, 10);
+  } catch {
+    return '';
+  }
+}
+
 function syncForm() {
   if (!ticket.value) return;
   form.title = ticket.value.title || '';
   form.description = ticket.value.description || '';
   form.statusId = ticket.value.statusId || '';
+  form.resolvedAt = toIsoDateOnly(ticket.value.resolvedAt || ticket.value.closedAt);
   form.priorityId = ticket.value.priorityId || '';
   form.productId = ticket.value.productId || '';
   form.ticketTypeId = ticket.value.ticketTypeId || '';
@@ -616,7 +653,7 @@ async function saveTicket() {
   if (isBusy.value) return;
   isSaving.value = true;
   try {
-    await ticketsService.update(route.params.id, {
+    const payload = {
       title: form.title,
       description: form.description,
       statusId: form.statusId,
@@ -627,7 +664,12 @@ async function saveTicket() {
       requesterName: form.requesterName || null,
       requesterPhone: form.requesterPhone || null,
       assigneeId: form.assigneeId || null,
-    });
+    };
+    if (selectedStatusIsFinal.value) {
+      const trimmed = String(form.resolvedAt || '').trim();
+      payload.resolvedAt = trimmed || undefined;
+    }
+    await ticketsService.update(route.params.id, payload);
 
     // Registrar tiempo "en el mismo guardado" cuando el ticket está cerrado y el usuario ingresa minutos.
     if (showWorklogs.value) {
@@ -784,6 +826,21 @@ async function uploadAttachment() {
     ui.showToast(error.message || 'No se pudo subir el archivo.', true);
   }
 }
+
+watch(
+  () => [form.statusId, catalogs.statuses.length],
+  ([newId, bundleLen], prev) => {
+    const oldId = prev?.[0];
+    if (!newId || !bundleLen) return;
+    const newSt = catalogs.statuses.find((s) => String(s.id) === String(newId));
+    const oldSt = oldId
+      ? catalogs.statuses.find((s) => String(s.id) === String(oldId))
+      : null;
+    if (newSt?.isFinal && !oldSt?.isFinal && !String(form.resolvedAt || '').trim()) {
+      form.resolvedAt = new Date().toISOString().slice(0, 10);
+    }
+  },
+);
 
 watch(
   () => ticket.value?.comments,
