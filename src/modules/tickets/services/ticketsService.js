@@ -14,6 +14,14 @@ export const ticketsService = {
     params.set('limit', String(limit));
     return request(`/tickets?${params.toString()}`);
   },
+  tabCounts: ({ q, from, to, productId } = {}) => {
+    const params = new URLSearchParams();
+    if (q && String(q).trim()) params.set('q', String(q).trim());
+    if (from && String(from).trim()) params.set('from', String(from).trim());
+    if (to && String(to).trim()) params.set('to', String(to).trim());
+    if (productId && String(productId).trim()) params.set('productId', String(productId).trim());
+    return request(`/tickets/tab-counts?${params.toString()}`);
+  },
   get: (id, options = {}) => {
     const params = new URLSearchParams();
     const add = (key, value) => {

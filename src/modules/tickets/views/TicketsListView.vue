@@ -294,64 +294,13 @@ async function replaceQueryFromState() {
   });
 }
 
-async function loadTabTotals() {
-  try {
-    const [allRes, mineRes, unassignedRes, closedRes] = await Promise.all([
-      ticketsService.list({
-        q: query.value,
-        from: filters.from,
-        to: filters.to,
-        productId: filters.productId,
-        view: 'all',
-        page: 1,
-        limit: 1,
-      }),
-      ticketsService.list({
-        q: query.value,
-        from: filters.from,
-        to: filters.to,
-        productId: filters.productId,
-        view: 'mine',
-        page: 1,
-        limit: 1,
-      }),
-      ticketsService.list({
-        q: query.value,
-        from: filters.from,
-        to: filters.to,
-        productId: filters.productId,
-        view: 'unassigned',
-        page: 1,
-        limit: 1,
-      }),
-      ticketsService.list({
-        q: query.value,
-        from: filters.from,
-        to: filters.to,
-        productId: filters.productId,
-        view: 'closed',
-        page: 1,
-        limit: 1,
-      }),
-    ]);
-    tabTotals.value = {
-      all: Number(allRes?.total || 0),
-      mine: Number(mineRes?.total || 0),
-      unassigned: Number(unassignedRes?.total || 0),
-      closed: Number(closedRes?.total || 0),
-    };
-  } catch {
-    tabTotals.value = { all: 0, mine: 0, unassigned: 0, closed: 0 };
-  }
-}
-
 async function loadTickets({ syncRoute = false, refreshTotals = false } = {}) {
   loading.value = true;
   try {
     if (syncRoute) {
       await replaceQueryFromState();
     }
-    const payload = await ticketsService.list({
+    const listParams = {
       q: query.value,
       from: filters.from,
       to: filters.to,
@@ -361,11 +310,29 @@ async function loadTickets({ syncRoute = false, refreshTotals = false } = {}) {
       view: activeTab.value,
       page: page.value,
       limit: limit.value,
-    });
+    };
+    const tabParams = {
+      q: query.value,
+      from: filters.from,
+      to: filters.to,
+      productId: filters.productId,
+    };
+    const listPromise = ticketsService.list(listParams);
+    const totalsPromise = refreshTotals
+      ? ticketsService.tabCounts(tabParams).catch(() => null)
+      : Promise.resolve(null);
+    const [payload, totals] = await Promise.all([listPromise, totalsPromise]);
     rows.value = payload?.items || [];
     total.value = payload?.total || 0;
     if (refreshTotals) {
-      await loadTabTotals();
+      tabTotals.value = totals
+        ? {
+            all: Number(totals.all ?? 0),
+            mine: Number(totals.mine ?? 0),
+            unassigned: Number(totals.unassigned ?? 0),
+            closed: Number(totals.closed ?? 0),
+          }
+        : { all: 0, mine: 0, unassigned: 0, closed: 0 };
     }
   } catch (error) {
     ui.showToast(error.message || 'No se pudo cargar la lista.', true);
