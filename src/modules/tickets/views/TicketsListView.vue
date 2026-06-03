@@ -1,20 +1,6 @@
 <template>
-  <section class="stack">
-    <div class="page-header">
-      <div class="page-title">
-        <h2>Centro de tickets</h2>
-        <p>{{ paginationMeta }}</p>
-      </div>
-    </div>
-
-    <div class="panel search-panel" role="region" aria-label="Filtros de tickets">
-      <div class="panel-header">
-        <div class="page-title">
-          <h2 style="font-size: 1.05rem">Exploración y filtros</h2>
-          <p>Búsqueda de texto, rango de fechas y paginación tipo dataTable.</p>
-        </div>
-      </div>
-
+  <section class="stack stack--compact">
+    <div class="panel search-panel search-panel--compact" role="region" aria-label="Filtros de tickets">
       <form class="search-panel__row" @submit.prevent="applyFilters">
         <div class="field-stack search-panel__field search-panel__field--query">
           <label for="ticket-search">Buscar ticket</label>
@@ -53,11 +39,11 @@
       </form>
     </div>
 
-    <div class="ticket-tabs" role="tablist" aria-label="Vistas de tickets">
+    <div class="ticket-tabs ticket-tabs--compact" role="tablist" aria-label="Vistas de tickets">
       <button
         v-for="tab in tabs"
         :key="tab.key"
-        class="ticket-tab"
+        class="ticket-tab ticket-tab--compact"
         :class="{ active: activeTab === tab.key }"
         type="button"
         @click="activeTab = tab.key"
@@ -66,7 +52,7 @@
       </button>
     </div>
 
-    <div class="table-wrap">
+    <div class="table-wrap table-wrap--compact">
       <table>
         <thead>
           <tr>
@@ -324,16 +310,18 @@ async function loadTickets({ syncRoute = false, refreshTotals = false } = {}) {
     const [payload, totals] = await Promise.all([listPromise, totalsPromise]);
     rows.value = payload?.items || [];
     total.value = payload?.total || 0;
-    if (refreshTotals) {
-      tabTotals.value = totals
-        ? {
-            all: Number(totals.all ?? 0),
-            mine: Number(totals.mine ?? 0),
-            unassigned: Number(totals.unassigned ?? 0),
-            closed: Number(totals.closed ?? 0),
-          }
-        : { all: 0, mine: 0, unassigned: 0, closed: 0 };
+    if (refreshTotals && totals) {
+      tabTotals.value = {
+        all: Number(totals.all ?? 0),
+        mine: Number(totals.mine ?? 0),
+        unassigned: Number(totals.unassigned ?? 0),
+        closed: Number(totals.closed ?? 0),
+      };
     }
+    tabTotals.value = {
+      ...tabTotals.value,
+      [activeTab.value]: total.value,
+    };
   } catch (error) {
     ui.showToast(error.message || 'No se pudo cargar la lista.', true);
   } finally {
@@ -425,6 +413,6 @@ onMounted(async () => {
 
 watch(activeTab, () => {
   page.value = 1;
-  loadTickets({ syncRoute: true });
+  loadTickets({ syncRoute: true, refreshTotals: true });
 });
 </script>

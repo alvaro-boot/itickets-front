@@ -63,13 +63,36 @@
       </aside>
 
       <main class="content content-shell">
-        <section class="hero page-hero">
-          <div class="actions-row" style="justify-content: space-between; align-items: flex-start; width: 100%">
+        <section v-if="!route.meta.hideHero" class="hero page-hero page-hero--compact">
+          <div class="actions-row page-hero__row">
             <div>
               <h1>{{ route.meta.title || 'Panel' }}</h1>
-              <p>{{ route.meta.subtitle || 'Gestion central de tickets y operaciones.' }}</p>
+              <p v-if="route.meta.subtitle">{{ route.meta.subtitle }}</p>
             </div>
-            <button class="btn btn-ghost" type="button" @click="handleGoBack">Atrás</button>
+            <div class="page-hero__actions">
+              <RouterLink
+                v-if="route.name === 'tickets'"
+                class="btn btn-primary"
+                to="/tickets/new"
+              >
+                Nuevo ticket
+              </RouterLink>
+              <RouterLink
+                v-if="route.name === 'ticket-detail'"
+                class="btn btn-ghost"
+                :to="ticketDetailBackTarget"
+              >
+                Lista
+              </RouterLink>
+              <button
+                v-else-if="route.meta.showBack !== false && route.name !== 'tickets'"
+                class="btn btn-ghost"
+                type="button"
+                @click="handleGoBack"
+              >
+                Atrás
+              </button>
+            </div>
           </div>
         </section>
         <section class="content-scroll">
@@ -126,6 +149,17 @@ const visibleItems = computed(() => {
     }
     return true;
   });
+});
+
+const ticketDetailBackTarget = computed(() => {
+  const preserved = {};
+  for (const key of ['q', 'from', 'to', 'productId', 'sortBy', 'sortDir', 'view', 'page', 'limit']) {
+    const value = route.query[key];
+    if (value != null && String(value).trim() !== '') {
+      preserved[key] = value;
+    }
+  }
+  return { path: '/tickets', query: preserved };
 });
 
 const initials = computed(() => {

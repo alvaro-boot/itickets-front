@@ -1,13 +1,5 @@
 <template>
   <section class="stack">
-    <div class="page-header">
-      <div class="page-title">
-        <h2>Ticket #{{ route.params.id }}</h2>
-        <p>Organiza el seguimiento del caso, controla su contexto y documenta todo el avance en un solo lugar.</p>
-      </div>
-      <RouterLink class="btn btn-ghost" :to="backToListTarget">Lista</RouterLink>
-    </div>
-
     <div v-if="loading" class="panel">
       <p class="meta">Cargando ticket...</p>
     </div>
@@ -548,11 +540,6 @@ const busyMessage = computed(() => {
   if (isDuplicating.value) return 'Duplicando ticket...';
   if (isCreatingSubtickets.value) return 'Creando subtickets...';
   return 'Cargando...';
-});
-
-const backToListTarget = computed(() => {
-  const query = { ...route.query };
-  return Object.keys(query).length ? { path: '/tickets', query } : { path: '/tickets' };
 });
 
 function toIsoDateOnly(value) {

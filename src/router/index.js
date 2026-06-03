@@ -36,7 +36,7 @@ const routes = [
         meta: {
           requiresAuth: true,
           title: 'Centro de tickets',
-          subtitle: 'Visualiza y prioriza incidencias en tiempo real.',
+          showBack: false,
         },
       },
       {
@@ -46,7 +46,6 @@ const routes = [
         meta: {
           requiresAuth: true,
           title: 'Nuevo ticket',
-          subtitle: 'Registra un caso con contexto y prioridad.',
         },
       },
       {
@@ -56,7 +55,6 @@ const routes = [
         meta: {
           requiresAuth: true,
           title: 'Detalle de ticket',
-          subtitle: 'Controla estado, asignacion, historial y comentarios.',
         },
       },
       {
