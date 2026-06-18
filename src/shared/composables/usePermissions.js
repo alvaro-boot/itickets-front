@@ -1,5 +1,5 @@
 import { computed } from 'vue';
-import { canAccessNavItem, hasModule, hasPermission, PERMISSIONS, MODULES } from '@nexus-desk/shared';
+import { canAccessNavItem, hasModule, hasPermission, PERMISSIONS, MODULES } from '../constants/access.js';
 import { useAuth } from './useAuth';
 
 export function usePermissions() {
