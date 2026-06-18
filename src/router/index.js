@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuth } from '../shared/composables/useAuth';
 
-const AppShell = () => import('../app/layouts/AppShell.vue');
+const AppLayout = () => import('../app/layouts/AppLayout.vue');
 const LoginView = () => import('../modules/auth/views/LoginView.vue');
 const TicketsListView = () => import('../modules/tickets/views/TicketsListView.vue');
 const TicketCreateView = () => import('../modules/tickets/views/TicketCreateView.vue');
@@ -22,7 +22,7 @@ const routes = [
   },
   {
     path: '/',
-    component: AppShell,
+    component: AppLayout,
     meta: { requiresAuth: true },
     children: [
       {

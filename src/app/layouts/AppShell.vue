@@ -41,6 +41,7 @@
             <p class="user-menu__name">{{ auth.state.profile?.fullName || 'Usuario' }}</p>
             <p v-if="auth.state.profile?.email" class="user-menu__email">{{ auth.state.profile.email }}</p>
             <RouterLink to="/profile" class="user-menu__item" @click="userMenuOpen = false">Mi perfil</RouterLink>
+            <button type="button" class="user-menu__item" @click="switchToNexusUi">Interfaz Nexus</button>
             <button type="button" class="user-menu__item user-menu__item--danger" @click="handleLogout">Cerrar sesión</button>
           </div>
         </div>
@@ -96,6 +97,7 @@ import { useUi } from '../../shared/composables/useUi';
 import CreateIssueModal from '../../modules/tickets/components/CreateIssueModal.vue';
 import { useCreateIssue } from '../../shared/composables/useCreateIssue';
 import { usePageChrome } from '../../shared/composables/usePageChrome';
+import { useNexusUi } from '../../shared/composables/useNexusUi';
 
 const auth = useAuth();
 const ui = useUi();
@@ -103,6 +105,7 @@ const route = useRoute();
 const router = useRouter();
 const { clearBreadcrumbCurrent } = usePageChrome();
 const { createIssueOpen, openCreateIssue, closeCreateIssue } = useCreateIssue();
+const nexusUi = useNexusUi();
 
 const userMenuOpen = ref(false);
 const userMenuRef = ref(null);
@@ -196,6 +199,12 @@ async function handleSwitchCompany(event) {
   } catch (error) {
     ui.showToast(error.message || 'No se pudo cambiar de empresa.', true);
   }
+}
+
+function switchToNexusUi() {
+  userMenuOpen.value = false;
+  nexusUi.setEnabled(true);
+  router.go(0);
 }
 
 function handleLogout() {
