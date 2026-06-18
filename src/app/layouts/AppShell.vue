@@ -4,7 +4,8 @@
       <div class="topbar__left">
         <button class="menu-toggle" type="button" aria-label="Abrir menú" @click="toggleSidebar">☰</button>
         <RouterLink to="/tickets" class="brand brand--shell" aria-label="Service Desk — inicio">
-          <img src="/images/icono.png" alt="" class="brand-icon brand-icon--topbar" width="28" height="28" decoding="async" />
+          <img src="/images/icono.png" alt="" class="brand-icon brand-icon--topbar" width="32" height="32" decoding="async" />
+          <span class="topbar-app-name">Service Desk</span>
         </RouterLink>
       </div>
 
@@ -44,8 +45,6 @@
       </nav>
     </header>
 
-    <PageBreadcrumbs :current-label="breadcrumbCurrent" />
-
     <div class="layout shell-layout">
       <aside class="sidebar sidebar--dense sidebar--jira" :hidden="false">
         <RouterLink to="/tickets" class="sidebar-brand sidebar-brand--dense" aria-label="Inicio" @click="closeSidebar">
@@ -70,6 +69,7 @@
       </aside>
 
       <main class="content content-shell content-shell--dense content-shell--jira">
+        <PageBreadcrumbs :current-label="breadcrumbCurrent" />
         <section class="content-scroll">
           <RouterView v-slot="{ Component, route: childRoute }">
             <KeepAlive :include="['tickets']">
