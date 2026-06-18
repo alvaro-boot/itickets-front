@@ -109,7 +109,6 @@ const modKey = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform
 
 const iconInbox = '<svg viewBox="0 0 24 24"><path d="M22 12h-6l-2 3H10l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>';
 const iconList = '<svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>';
-const iconBacklog = '<svg viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>';
 const iconChart = '<svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>';
 const iconIncident = '<svg viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>';
 const iconTask = '<svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>';
@@ -122,8 +121,7 @@ const sections = [
     items: [
       { to: '/tickets?view=mine', label: 'Bandeja', key: 'inbox', icon: iconInbox },
       { to: '/tickets', label: 'Todos', key: 'tickets', icon: iconList },
-      { to: '/tickets?view=backlog', label: 'Backlog', key: 'backlog', icon: iconBacklog },
-      { to: '/dashboard', label: 'Dashboard', key: 'dashboard', icon: iconChart },
+      { to: '/reports', label: 'Reportes', key: 'reports', icon: iconChart },
     ],
   },
   {
@@ -184,7 +182,6 @@ const paletteCommands = computed(() => {
 
 function isActive(item) {
   if (item.key === 'inbox') return route.path === '/tickets' && route.query.view === 'mine';
-  if (item.key === 'backlog') return route.path === '/tickets' && route.query.view === 'backlog';
   if (item.key === 'tickets') {
     return route.path === '/tickets' && (!route.query.view || route.query.view === 'all');
   }

@@ -11,7 +11,7 @@ const TasksView = () => import('../modules/tasks/views/TasksView.vue');
 const ProfileView = () => import('../modules/profile/views/ProfileView.vue');
 const CatalogsView = () => import('../modules/catalogs/views/CatalogsView.vue');
 const AdminView = () => import('../modules/admin/views/AdminView.vue');
-const DashboardView = () => import('../modules/dashboard/views/DashboardView.vue');
+const DashboardView = () => import('../modules/reports/views/ReportsView.vue');
 
 const routes = [
   {
@@ -114,16 +114,16 @@ const routes = [
       },
       {
         path: 'dashboard',
-        name: 'dashboard',
-        component: DashboardView,
-        meta: {
-          requiresAuth: true,
-          title: 'Dashboard',
-        },
+        redirect: '/reports',
       },
       {
         path: 'reports',
-        redirect: '/dashboard',
+        name: 'reports',
+        component: DashboardView,
+        meta: {
+          requiresAuth: true,
+          title: 'Reportes',
+        },
       },
     ],
   },

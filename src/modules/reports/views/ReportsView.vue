@@ -1,7 +1,7 @@
 <template>
-  <section class="page">
+  <section class="page page--module">
     <header class="page__header">
-      <h1>Reportes</h1>
+      <h1 class="page__title">Reportes</h1>
       <p v-if="distribution.summary" class="page__subtitle">
         Resueltos {{ distribution.summary.resolved || 0 }} · Promedio {{ avgHours.toFixed(1) }} h · Pendientes {{ distribution.summary.pending || 0 }}
       </p>

@@ -67,18 +67,6 @@
                 <option v-for="a in catalogs.areas" :key="a.id" :value="a.id">{{ a.name }}</option>
               </select>
             </JiraFieldRow>
-            <JiraFieldRow label="Story points">
-              <select v-model="form.storyPoints" class="jira-field-control">
-                <option value="">Sin estimar</option>
-                <option v-for="p in storyPointOptions" :key="p" :value="String(p)">{{ p }}</option>
-              </select>
-            </JiraFieldRow>
-            <JiraFieldRow label="Sprint">
-              <select v-model="form.sprintId" class="jira-field-control">
-                <option value="">Backlog</option>
-                <option v-for="s in sprints" :key="s.id" :value="s.id">{{ s.name }} ({{ s.status }})</option>
-              </select>
-            </JiraFieldRow>
             <JiraFieldRow label="Solicitante">
               <input v-model.trim="form.requesterName" required minlength="2" class="jira-field-control" />
             </JiraFieldRow>
@@ -103,10 +91,7 @@ import { ticketsService } from '../services/ticketsService';
 import { useCatalogs } from '../../../shared/composables/useCatalogs';
 import { useUsers } from '../../../shared/composables/useUsers';
 import { useUi } from '../../../shared/composables/useUi';
-import { sprintsService } from '../../sprints/services/sprintsService';
 import JiraFieldRow from '../../../shared/components/JiraFieldRow.vue';
-
-const storyPointOptions = [1, 2, 3, 5, 8, 13, 21];
 
 const RichTextEditor = defineAsyncComponent(
   () => import('../../../shared/components/RichTextEditor.vue'),
@@ -126,7 +111,6 @@ const { fetchUsersList } = useUsers();
 const summaryInput = ref(null);
 const submitting = ref(false);
 const users = ref([]);
-const sprints = ref([]);
 const catalogs = reactive({
   statuses: [],
   priorities: [],
@@ -146,8 +130,6 @@ const form = reactive({
   requesterName: '',
   requesterPhone: '',
   assigneeId: '',
-  storyPoints: '',
-  sprintId: '',
 });
 
 function resetForm() {
@@ -156,8 +138,6 @@ function resetForm() {
   form.requesterName = '';
   form.requesterPhone = '';
   form.assigneeId = '';
-  form.storyPoints = '';
-  form.sprintId = '';
   form.statusId = catalogs.statuses?.[0]?.id || '';
   form.priorityId = catalogs.priorities?.[0]?.id || '';
   form.productId = catalogs.products?.[0]?.id || '';
@@ -170,17 +150,10 @@ function close() {
 }
 
 async function loadData() {
-  const [bundle, usersRows, sprintsPayload] = await Promise.all([
-    fetchCatalogBundle(),
-    fetchUsersList(),
-    sprintsService.list().catch(() => ({ items: [] })),
-  ]);
+  const [bundle, usersRows] = await Promise.all([fetchCatalogBundle(), fetchUsersList()]);
   Object.assign(catalogs, bundle);
   users.value = usersRows;
-  sprints.value = sprintsPayload?.items || [];
   resetForm();
-  const active = sprints.value.find((s) => s.status === 'active');
-  if (active) form.sprintId = active.id;
 }
 
 async function submit() {
@@ -198,8 +171,6 @@ async function submit() {
       requesterName: form.requesterName,
       requesterPhone: form.requesterPhone || undefined,
       assigneeId: form.assigneeId || undefined,
-      storyPoints: form.storyPoints ? Number(form.storyPoints) : undefined,
-      sprintId: form.sprintId || undefined,
     });
     emit('created', ticket);
     close();

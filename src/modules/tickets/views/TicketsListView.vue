@@ -73,8 +73,7 @@
                 <span class="datatable__sort-indicator">{{ sortIndicator('title') }}</span>
               </button>
             </th>
-            <th class="hide-mobile">Pts</th>
-            <th>Estado</th>
+            <th class="hide-mobile">Estado</th>
             <th>
               <button type="button" class="datatable__sort-btn" :class="{ 'datatable__sort-btn--active': sortBy === 'priority' }" @click="toggleSort('priority')">
                 <span>Prioridad</span>
@@ -92,14 +91,14 @@
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="7">
+            <td colspan="6">
               <div class="skeleton-stack skeleton-rows">
                 <div v-for="n in 5" :key="n" class="skeleton-line skeleton-line--lg skeleton-line--w90"></div>
               </div>
             </td>
           </tr>
           <tr v-else-if="visibleRows.length === 0">
-            <td colspan="7"><div class="empty-state">No hay tickets en esta vista.</div></td>
+            <td colspan="6"><div class="empty-state">No hay tickets en esta vista.</div></td>
           </tr>
           <tr v-for="ticket in visibleRows" :key="ticket.id" class="table-row-clickable">
             <td>
@@ -110,7 +109,6 @@
                 {{ ticket.title }}
               </RouterLink>
             </td>
-            <td class="meta hide-mobile">{{ ticket.storyPoints ?? '—' }}</td>
             <td>
               <StatusLozenge v-if="ticket.status?.name" :label="ticket.status.name" :code="ticket.status.code" />
             </td>
@@ -181,11 +179,10 @@ const limit = ref(25);
 const sortBy = ref('updatedAt');
 const sortDir = ref('desc');
 const total = ref(0);
-const tabTotals = ref({ all: 0, mine: 0, unassigned: 0, closed: 0, backlog: 0 });
+const tabTotals = ref({ all: 0, mine: 0, unassigned: 0, closed: 0 });
 
 const tabs = [
   { key: 'all', label: 'Todos' },
-  { key: 'backlog', label: 'Backlog' },
   { key: 'mine', label: 'Míos' },
   { key: 'unassigned', label: 'Sin asignar' },
   { key: 'closed', label: 'Cerrados' },
@@ -303,7 +300,6 @@ async function loadTickets({ syncRoute = false, refreshTotals = false } = {}) {
         mine: Number(payload.tabCounts.mine ?? 0),
         unassigned: Number(payload.tabCounts.unassigned ?? 0),
         closed: Number(payload.tabCounts.closed ?? 0),
-        backlog: Number(payload.tabCounts.backlog ?? 0),
       };
     }
     tabTotals.value = { ...tabTotals.value, [activeTab.value]: total.value };
@@ -393,7 +389,7 @@ watch(
     if (next === query.value) return;
     query.value = next;
     page.value = 1;
-    loadTickets({ syncRoute: false, refreshTotals: true });
+    loadTickets({ syncRoute: false });
   },
 );
 </script>

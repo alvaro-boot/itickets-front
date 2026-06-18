@@ -36,8 +36,7 @@ export function canAccessNavItem(profile, itemKey) {
   switch (itemKey) {
     case 'inbox':
     case 'tickets':
-    case 'backlog':
-    case 'dashboard':
+    case 'reports':
       return hasModule(profile, MODULES.TICKETS);
     case 'incidents':
       return hasModule(profile, MODULES.INCIDENTS);
