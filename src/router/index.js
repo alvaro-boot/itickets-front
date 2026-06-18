@@ -11,7 +11,8 @@ const TasksView = () => import('../modules/tasks/views/TasksView.vue');
 const ProfileView = () => import('../modules/profile/views/ProfileView.vue');
 const CatalogsView = () => import('../modules/catalogs/views/CatalogsView.vue');
 const AdminView = () => import('../modules/admin/views/AdminView.vue');
-const DashboardView = () => import('../modules/reports/views/ReportsView.vue');
+const HomeView = () => import('../modules/home/views/HomeView.vue');
+const ReportsView = () => import('../modules/reports/views/ReportsView.vue');
 
 const routes = [
   {
@@ -27,7 +28,16 @@ const routes = [
     children: [
       {
         path: '',
-        redirect: '/tickets',
+        redirect: '/home',
+      },
+      {
+        path: 'home',
+        name: 'home',
+        component: HomeView,
+        meta: {
+          requiresAuth: true,
+          title: 'Inicio',
+        },
       },
       {
         path: 'tickets',
@@ -114,12 +124,12 @@ const routes = [
       },
       {
         path: 'dashboard',
-        redirect: '/reports',
+        redirect: '/home',
       },
       {
         path: 'reports',
         name: 'reports',
-        component: DashboardView,
+        component: ReportsView,
         meta: {
           requiresAuth: true,
           title: 'Reportes',
@@ -147,7 +157,7 @@ router.beforeEach(async (to) => {
   }
 
   if (to.meta.guestOnly && auth.isAuthenticated.value) {
-    return { name: 'tickets' };
+    return { name: 'home' };
   }
 
   return true;

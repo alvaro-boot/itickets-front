@@ -323,6 +323,101 @@
   border-radius: 8px;
 }
 
+/* ── Inicio (dashboard principal) ── */
+
+.page--home {
+  max-width: 1280px;
+}
+
+.nexus-shell .page--home {
+  padding: 0;
+  max-width: none;
+}
+
+.home-kpi-grid {
+  margin-bottom: 1.5rem;
+}
+
+.home-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 1.25rem;
+}
+
+.home-panel {
+  min-height: 200px;
+}
+
+.home-empty {
+  padding: 1.5rem 0;
+  text-align: center;
+}
+
+.home-ticket-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.home-ticket-list li {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.home-ticket-list li:last-child {
+  border-bottom: none;
+}
+
+.home-ticket-list__link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.75rem 0.25rem;
+  text-decoration: none;
+  color: inherit;
+  transition: background 120ms ease;
+  border-radius: 8px;
+}
+
+.home-ticket-list__link:hover {
+  background: #f8fafc;
+}
+
+.home-ticket-list__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-quick-links {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.home-quick-link {
+  display: block;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #f8fafc;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.home-quick-link:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* ── Módulos: incidentes y tareas ── */
 
 .page--module {
@@ -554,6 +649,10 @@
 
   .page--module {
     padding: 1rem 1rem 2rem;
+  }
+
+  .home-grid {
+    grid-template-columns: 1fr;
   }
 
   .jira-modal__body {

@@ -1,7 +1,7 @@
 <template>
   <div class="nexus-shell">
     <header class="nx-topbar">
-      <RouterLink to="/tickets" class="nx-topbar__brand" aria-label="Nexus Desk — inicio">
+      <RouterLink to="/home" class="nx-topbar__brand" aria-label="Nexus Desk — inicio">
         <img src="/images/icono.png" alt="" width="28" height="28" decoding="async" />
         <span>Nexus Desk</span>
       </RouterLink>
@@ -35,7 +35,6 @@
             <p class="nx-user-menu__name">{{ auth.state.profile?.fullName || 'Usuario' }}</p>
             <p v-if="auth.state.profile?.email" class="nx-user-menu__email">{{ auth.state.profile.email }}</p>
             <RouterLink to="/profile" class="nx-user-menu__item" @click="userMenuOpen = false">Mi perfil</RouterLink>
-            <button type="button" class="nx-user-menu__item" @click="switchToClassicUi">Interfaz clásica</button>
             <button type="button" class="nx-user-menu__item nx-user-menu__item--danger" @click="handleLogout">Cerrar sesión</button>
           </div>
         </div>
@@ -90,12 +89,10 @@ import { useUi } from '../../shared/composables/useUi';
 import { useCreateIssue } from '../../shared/composables/useCreateIssue';
 import { usePageChrome } from '../../shared/composables/usePageChrome';
 import { usePermissions } from '../../shared/composables/usePermissions';
-import { useNexusUi } from '../../shared/composables/useNexusUi';
 
 const auth = useAuth();
 const ui = useUi();
 const perms = usePermissions();
-const nexusUi = useNexusUi();
 const route = useRoute();
 const router = useRouter();
 const { clearBreadcrumbCurrent } = usePageChrome();
@@ -107,6 +104,7 @@ const paletteOpen = ref(false);
 
 const modKey = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform) ? '⌘' : 'Ctrl+';
 
+const iconHome = '<svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z"/></svg>';
 const iconInbox = '<svg viewBox="0 0 24 24"><path d="M22 12h-6l-2 3H10l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>';
 const iconList = '<svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>';
 const iconChart = '<svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>';
@@ -117,8 +115,9 @@ const iconAdmin = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path
 
 const sections = [
   {
-    label: 'Trabajo',
+    label: 'Principal',
     items: [
+      { to: '/home', label: 'Inicio', key: 'home', icon: iconHome },
       { to: '/tickets?view=mine', label: 'Bandeja', key: 'inbox', icon: iconInbox },
       { to: '/tickets', label: 'Todos', key: 'tickets', icon: iconList },
       { to: '/reports', label: 'Reportes', key: 'reports', icon: iconChart },
@@ -168,10 +167,10 @@ const paletteCommands = computed(() => {
     });
   }
   actions.push({
-    id: 'classic-ui',
-    label: 'Cambiar a interfaz clásica',
-    hint: 'Apariencia',
-    action: switchToClassicUi,
+    id: 'go-home',
+    label: 'Ir al inicio',
+    hint: 'Navegación',
+    to: '/home',
   });
 
   return [
@@ -181,6 +180,7 @@ const paletteCommands = computed(() => {
 });
 
 function isActive(item) {
+  if (item.key === 'home') return route.path === '/home';
   if (item.key === 'inbox') return route.path === '/tickets' && route.query.view === 'mine';
   if (item.key === 'tickets') {
     return route.path === '/tickets' && (!route.query.view || route.query.view === 'all');
@@ -190,12 +190,6 @@ function isActive(item) {
 
 function onPaletteRun(item) {
   if (item.action) item.action();
-}
-
-function switchToClassicUi() {
-  userMenuOpen.value = false;
-  nexusUi.setEnabled(false);
-  router.go(0);
 }
 
 function onKeyDown(event) {

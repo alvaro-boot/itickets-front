@@ -3,7 +3,7 @@
     <header class="topbar topbar--dense topbar--jira">
       <div class="topbar__left">
         <button class="menu-toggle" type="button" aria-label="Abrir menú" @click="toggleSidebar">☰</button>
-        <RouterLink to="/tickets" class="brand brand--shell" aria-label="Service Desk — inicio">
+        <RouterLink to="/home" class="brand brand--shell" aria-label="Service Desk — inicio">
           <img src="/images/icono.png" alt="" class="brand-icon brand-icon--topbar" width="32" height="32" decoding="async" />
           <span class="topbar-app-name">Service Desk</span>
         </RouterLink>
@@ -41,7 +41,6 @@
             <p class="user-menu__name">{{ auth.state.profile?.fullName || 'Usuario' }}</p>
             <p v-if="auth.state.profile?.email" class="user-menu__email">{{ auth.state.profile.email }}</p>
             <RouterLink to="/profile" class="user-menu__item" @click="userMenuOpen = false">Mi perfil</RouterLink>
-            <button type="button" class="user-menu__item" @click="switchToNexusUi">Interfaz Nexus</button>
             <button type="button" class="user-menu__item user-menu__item--danger" @click="handleLogout">Cerrar sesión</button>
           </div>
         </div>
@@ -97,7 +96,6 @@ import { useUi } from '../../shared/composables/useUi';
 import CreateIssueModal from '../../modules/tickets/components/CreateIssueModal.vue';
 import { useCreateIssue } from '../../shared/composables/useCreateIssue';
 import { usePageChrome } from '../../shared/composables/usePageChrome';
-import { useNexusUi } from '../../shared/composables/useNexusUi';
 
 const auth = useAuth();
 const ui = useUi();
@@ -105,11 +103,11 @@ const route = useRoute();
 const router = useRouter();
 const { clearBreadcrumbCurrent } = usePageChrome();
 const { createIssueOpen, openCreateIssue, closeCreateIssue } = useCreateIssue();
-const nexusUi = useNexusUi();
 
 const userMenuOpen = ref(false);
 const userMenuRef = ref(null);
 
+const iconHome = '<svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z"/></svg>';
 const iconList = '<svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>';
 const iconIncident = '<svg viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>';
 const iconTask = '<svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>';
@@ -120,7 +118,10 @@ const iconReport = '<svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"
 const sections = [
   {
     label: '',
-    items: [{ to: '/tickets', label: 'Tickets', key: 'tickets', icon: iconList }],
+    items: [
+      { to: '/home', label: 'Inicio', key: 'home', icon: iconHome },
+      { to: '/tickets', label: 'Tickets', key: 'tickets', icon: iconList },
+    ],
   },
   {
     label: 'Operaciones',
@@ -142,6 +143,7 @@ const sections = [
 function canSeeItem(item) {
   const profile = auth.state.profile;
   if (!profile) return true;
+  if (item.key === 'home') return profile.enabledModules?.includes('tickets');
   if (item.key === 'tickets') return profile.enabledModules?.includes('tickets');
   if (item.key === 'admin') return profile.permissions?.includes('companies.manage');
   if (item.key === 'incidents') return profile.enabledModules?.includes('incidents');
@@ -166,6 +168,7 @@ const canCreateTicket = computed(() => auth.state.profile?.enabledModules?.inclu
 const canSearchTickets = computed(() => auth.state.profile?.enabledModules?.includes('tickets'));
 
 function isActive(item) {
+  if (item.key === 'home') return route.path === '/home';
   if (item.key === 'tickets') {
     return route.path === '/tickets' || (route.path.startsWith('/tickets/') && !route.path.endsWith('/new'));
   }
@@ -199,12 +202,6 @@ async function handleSwitchCompany(event) {
   } catch (error) {
     ui.showToast(error.message || 'No se pudo cambiar de empresa.', true);
   }
-}
-
-function switchToNexusUi() {
-  userMenuOpen.value = false;
-  nexusUi.setEnabled(true);
-  router.go(0);
 }
 
 function handleLogout() {

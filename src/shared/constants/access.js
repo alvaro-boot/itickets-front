@@ -34,6 +34,7 @@ export function hasPermission(profile, permission) {
 export function canAccessNavItem(profile, itemKey) {
   if (!profile) return true;
   switch (itemKey) {
+    case 'home':
     case 'inbox':
     case 'tickets':
     case 'reports':

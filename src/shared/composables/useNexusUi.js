@@ -2,45 +2,33 @@ import { computed, reactive, readonly } from 'vue';
 
 const STORAGE_KEY = 'nexus_ui_enabled';
 
-function readInitialEnabled() {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored === 'true') return true;
-  if (stored === 'false') return false;
-  if (import.meta.env.VITE_NEXUS_UI === 'false') return false;
-  return true;
-}
-
 const state = reactive({
-  enabled: readInitialEnabled(),
+  enabled: true,
 });
 
 function setEnabled(value) {
   state.enabled = Boolean(value);
-  localStorage.setItem(STORAGE_KEY, state.enabled ? 'true' : 'false');
-  document.documentElement.classList.toggle('nexus-ui-active', state.enabled);
-  if (state.enabled) {
-    document.title = 'Nexus Desk';
-  } else {
-    document.title = 'Service Desk';
-  }
+  localStorage.setItem(STORAGE_KEY, 'true');
+  document.documentElement.classList.add('nexus-ui-active');
+  document.title = 'Nexus Desk';
 }
 
 function toggle() {
-  setEnabled(!state.enabled);
+  setEnabled(true);
 }
 
 export function useNexusUi() {
   return {
     state: readonly(state),
-    enabled: computed(() => state.enabled),
+    enabled: computed(() => true),
     setEnabled,
     toggle,
   };
 }
 
 export function initNexusUi() {
-  document.documentElement.classList.toggle('nexus-ui-active', state.enabled);
-  if (state.enabled) {
-    document.title = 'Nexus Desk';
-  }
+  localStorage.setItem(STORAGE_KEY, 'true');
+  state.enabled = true;
+  document.documentElement.classList.add('nexus-ui-active');
+  document.title = 'Nexus Desk';
 }
