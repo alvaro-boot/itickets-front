@@ -35,6 +35,7 @@ const routes = [
         component: TicketsListView,
         meta: {
           requiresAuth: true,
+          hideHero: true,
           title: 'Centro de tickets',
           showBack: false,
         },
@@ -45,6 +46,7 @@ const routes = [
         component: TicketCreateView,
         meta: {
           requiresAuth: true,
+          hideHero: true,
           title: 'Nuevo ticket',
         },
       },
@@ -54,6 +56,7 @@ const routes = [
         component: TicketDetailView,
         meta: {
           requiresAuth: true,
+          hideHero: true,
           title: 'Detalle de ticket',
         },
       },
@@ -63,8 +66,8 @@ const routes = [
         component: IncidentsView,
         meta: {
           requiresAuth: true,
+          hideHero: true,
           title: 'Incidentes generales',
-          subtitle: 'Todos los usuarios pueden ver los incidentes abiertos.',
         },
       },
       {
@@ -73,8 +76,8 @@ const routes = [
         component: TasksView,
         meta: {
           requiresAuth: true,
+          hideHero: true,
           title: 'Mis tareas',
-          subtitle: 'Registra y controla tus tareas del dia a dia.',
         },
       },
       {
@@ -83,8 +86,8 @@ const routes = [
         component: ProfileView,
         meta: {
           requiresAuth: true,
+          hideHero: true,
           title: 'Mi perfil',
-          subtitle: 'Actualiza tu informacion personal y credenciales.',
         },
       },
       {
@@ -93,8 +96,8 @@ const routes = [
         component: CatalogsView,
         meta: {
           requiresAuth: true,
+          hideHero: true,
           title: 'Catalogos',
-          subtitle: 'Administra productos y tipos de ticket del sistema.',
         },
       },
       {
@@ -103,8 +106,8 @@ const routes = [
         component: AdminView,
         meta: {
           requiresAuth: true,
+          hideHero: true,
           title: 'Administración global',
-          subtitle: 'Gestiona empresas, módulos y permisos globales.',
         },
       },
       {
@@ -113,8 +116,8 @@ const routes = [
         component: ReportsView,
         meta: {
           requiresAuth: true,
+          hideHero: true,
           title: 'Dashboard de reportes',
-          subtitle: 'Consulta tiempos de resolucion y productividad.',
         },
       },
     ],

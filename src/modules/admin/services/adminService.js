@@ -2,6 +2,7 @@ import { request } from '../../../shared/services/httpClient';
 
 export const adminService = {
   companies: () => request('/admin/companies'),
+  companiesWithModules: () => request('/admin/companies-with-modules'),
   createCompany: (body) => request('/admin/companies', { method: 'POST', body: JSON.stringify(body) }),
   companyModules: (companyId) => request(`/admin/companies/${companyId}/modules`),
   setCompanyModules: (companyId, body) =>

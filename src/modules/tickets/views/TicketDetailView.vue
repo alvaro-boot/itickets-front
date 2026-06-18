@@ -1,59 +1,32 @@
 <template>
-  <section class="stack">
+  <section class="stack stack--compact">
     <div v-if="loading" class="panel">
       <p class="meta">Cargando ticket...</p>
     </div>
 
     <template v-else-if="ticket">
+      <header class="ticket-detail-toolbar">
+        <div>
+          <p class="ticket-detail-toolbar__id">Ticket #{{ ticket.id }}</p>
+          <h1>{{ ticket.title }}</h1>
+          <div class="view-toolbar__meta" style="margin-top: 0.35rem">
+            <span class="status-pill ticket-status-pill"><span class="status-dot"></span>{{ selectedStatusName }}</span>
+            <span class="metric-chip">Prioridad <strong>{{ selectedPriorityName }}</strong></span>
+            <span class="metric-chip">Tiempo <strong>{{ ticket.totalLoggedMinutes || 0 }} min</strong></span>
+            <span class="metric-chip">Actividad <strong>{{ activityCount }}</strong></span>
+          </div>
+        </div>
+        <div class="view-toolbar__actions">
+          <RouterLink class="btn btn-ghost btn--sm" :to="backToList">Lista</RouterLink>
+        </div>
+      </header>
+
       <div v-if="isBusy" class="ticket-loading-hint" role="status" aria-live="polite">
         <span class="ticket-loading-hint__dot"></span>
         <span>{{ busyMessage }}</span>
       </div>
 
-      <section class="ticket-overview-card">
-        <div class="ticket-overview-card__main">
-          <p class="spotlight-card__eyebrow">Resumen del caso</p>
-          <h3 class="ticket-overview-card__title">{{ ticket.title }}</h3>
-          <RichHtmlDisplay
-            v-if="ticket.description && String(ticket.description).trim()"
-            class="ticket-overview-card__copy"
-            :html="ticket.description"
-          />
-          <p v-else class="ticket-overview-card__copy">Este ticket aún no tiene una descripción detallada.</p>
-        </div>
-        <div class="ticket-overview-card__side">
-          <div class="status-pill ticket-status-pill">
-            <span class="status-dot"></span>
-            {{ selectedStatusName }}
-          </div>
-          <p class="ticket-overview-card__side-meta">Prioridad {{ selectedPriorityName }}</p>
-        </div>
-      </section>
-
-      <section class="stats-grid">
-        <article class="stat-card">
-          <p class="stat-card__label">Tiempo registrado</p>
-          <p class="stat-card__value">{{ ticket.totalLoggedMinutes || 0 }} min</p>
-          <p class="stat-card__hint">{{ ticket.totalLoggedHours || 0 }} horas acumuladas en este ticket</p>
-        </article>
-        <article class="stat-card">
-          <p class="stat-card__label">Última actualización</p>
-          <p class="stat-card__value">{{ shortUpdatedAt }}</p>
-          <p class="stat-card__hint">Último cambio documentado sobre el caso</p>
-        </article>
-        <article v-if="isClosedStatus" class="stat-card">
-          <p class="stat-card__label">Fecha de solución</p>
-          <p class="stat-card__value">{{ solutionDateLabel }}</p>
-          <p class="stat-card__hint">Fecha usada en reportes (puedes corregirla en datos principales si el cierre fue atrasado)</p>
-        </article>
-        <article class="stat-card">
-          <p class="stat-card__label">Actividad</p>
-          <p class="stat-card__value">{{ activityCount }}</p>
-          <p class="stat-card__hint">Eventos, comentarios y registros vinculados</p>
-        </article>
-      </section>
-
-      <section class="ticket-tabs" role="tablist" aria-label="Secciones del ticket">
+      <section class="ticket-tabs ticket-tabs--compact" role="tablist" aria-label="Secciones del ticket">
         <button
           v-for="tab in workspaceTabs"
           :key="tab.key"
@@ -68,7 +41,7 @@
         </button>
       </section>
 
-      <section class="ticket-workspace">
+      <section class="ticket-workspace ticket-detail-layout">
         <div v-if="activeWorkspaceTab === 'overview'" class="ticket-overview-workspace">
           <article class="panel ticket-panel">
           <div class="panel-header">
@@ -353,7 +326,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, onMounted, reactive, ref, watch } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { ticketsService } from '../services/ticketsService';
 import { useCatalogs } from '../../../shared/composables/useCatalogs';
@@ -362,8 +335,9 @@ import { useUi } from '../../../shared/composables/useUi';
 import { uploadsService } from '../../../shared/services/uploadsService';
 import { eventText, fmtDate } from '../../../shared/utils/format';
 import RichHtmlDisplay from '../../../shared/components/RichHtmlDisplay.vue';
-import RichTextEditor from '../../../shared/components/RichTextEditor.vue';
 import { isRichHtmlEmpty, stripUrlsForDisplay } from '../../../shared/utils/richHtml';
+
+const RichTextEditor = defineAsyncComponent(() => import('../../../shared/components/RichTextEditor.vue'));
 
 const route = useRoute();
 const router = useRouter();
@@ -385,7 +359,8 @@ const isCreatingSubtickets = ref(false);
 const subticketQuantity = ref(1);
 const deletingCommentId = ref('');
 const activeWorkspaceTab = ref('overview');
-const DETAIL_ACTIVITY_LIMIT = 60;
+const commentsLoaded = ref(false);
+const DETAIL_ACTIVITY_LIMIT = 40;
 const worklog = reactive({
   amount: null,
   unit: 'minutes',
@@ -427,6 +402,47 @@ function extractAttachments(body) {
   });
 }
 
+const backToList = computed(() => {
+  const preserved = {};
+  for (const key of ['q', 'from', 'to', 'productId', 'sortBy', 'sortDir', 'view', 'page', 'limit']) {
+    const value = route.query[key];
+    if (value != null && String(value).trim() !== '') preserved[key] = value;
+  }
+  return { path: '/tickets', query: preserved };
+});
+
+async function loadCommentsIfNeeded() {
+  if (commentsLoaded.value) return;
+  await refreshTicketDataSoft({ includeComments: true, includeEvents: false, includeWorklogs: false });
+  commentsLoaded.value = true;
+}
+
+async function resolveCommentImagePreviews(comments) {
+  if (!comments?.length) return;
+  const pending = [];
+  const urls = [];
+  for (const comment of comments) {
+    extractAttachments(comment.body).forEach((att, attIdx) => {
+      if (!att.isImage) return;
+      const key = attachmentPreviewKey(comment, attIdx);
+      if (resolvedImageSrc[key] !== undefined) return;
+      pending.push({ key, storedUrl: att.storedUrl });
+      urls.push(att.storedUrl);
+    });
+  }
+  if (!urls.length) return;
+  try {
+    const result = await uploadsService.getViewUrls(urls);
+    const map = result?.urls || {};
+    pending.forEach(({ key, storedUrl }) => {
+      resolvedImageSrc[key] = map[storedUrl] || '';
+    });
+  } catch {
+    pending.forEach(({ key }) => {
+      resolvedImageSrc[key] = '';
+    });
+  }
+}
 function attachmentPreviewKey(comment, attIdx) {
   return `${String(comment.id)}-${attIdx}`;
 }
@@ -587,7 +603,7 @@ function mergeTicketSnapshot(snapshot) {
 
 async function refreshTicketDataSoft(options = {}) {
   const fullSnapshot = await ticketsService.get(route.params.id, {
-    includeComments: options.includeComments ?? true,
+    includeComments: options.includeComments ?? commentsLoaded.value,
     includeWorklogs: options.includeWorklogs ?? true,
     includeEvents: options.includeEvents ?? activeWorkspaceTab.value === 'history',
     commentsLimit: options.commentsLimit ?? DETAIL_ACTIVITY_LIMIT,
@@ -595,17 +611,21 @@ async function refreshTicketDataSoft(options = {}) {
     eventsLimit: options.eventsLimit ?? DETAIL_ACTIVITY_LIMIT,
   });
   mergeTicketSnapshot(fullSnapshot);
+  if (fullSnapshot?.comments?.length) {
+    commentsLoaded.value = true;
+    await resolveCommentImagePreviews(fullSnapshot.comments);
+  }
 }
 
 async function loadTicket() {
   loading.value = true;
+  commentsLoaded.value = false;
   try {
     const [ticketRow, catalogBundle, userList] = await Promise.all([
       ticketsService.get(route.params.id, {
-        includeComments: true,
+        includeComments: false,
         includeWorklogs: true,
         includeEvents: false,
-        commentsLimit: DETAIL_ACTIVITY_LIMIT,
         worklogsLimit: DETAIL_ACTIVITY_LIMIT,
       }),
       fetchCatalogBundle(),
@@ -629,6 +649,7 @@ async function loadTicket() {
     );
 
     syncForm();
+    await loadCommentsIfNeeded();
   } catch (error) {
     ui.showToast(error.message || 'No se pudo cargar el ticket.', true);
   } finally {
@@ -831,30 +852,10 @@ watch(
 
 watch(
   () => ticket.value?.comments,
-  async (comments) => {
-    if (!comments?.length) return;
-    const tasks = [];
-    for (const comment of comments) {
-      const atts = extractAttachments(comment.body);
-      atts.forEach((att, attIdx) => {
-        if (!att.isImage) return;
-        const key = attachmentPreviewKey(comment, attIdx);
-        if (resolvedImageSrc[key] !== undefined) return;
-        tasks.push(
-          uploadsService
-            .getViewUrl(att.storedUrl)
-            .then((res) => {
-              resolvedImageSrc[key] = res?.url || '';
-            })
-            .catch(() => {
-              resolvedImageSrc[key] = '';
-            }),
-        );
-      });
-    }
-    await Promise.all(tasks);
+  (comments) => {
+    void resolveCommentImagePreviews(comments);
   },
-  { deep: true, immediate: true },
+  { deep: true },
 );
 
 onMounted(loadTicket);
@@ -878,6 +879,10 @@ watch(showWorklogs, (enabled) => {
 watch(
   () => activeWorkspaceTab.value,
   async (tab) => {
+    if (tab === 'overview') {
+      await loadCommentsIfNeeded();
+      return;
+    }
     if (tab !== 'history') return;
     const hasEventsLoaded = Array.isArray(ticket.value?.events) && ticket.value.events.length > 0;
     if (hasEventsLoaded) return;

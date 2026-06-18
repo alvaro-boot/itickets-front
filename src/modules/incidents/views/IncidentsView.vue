@@ -1,29 +1,15 @@
 <template>
-  <section class="stack">
-    <div class="page-header">
-      <div class="page-title">
-        <h2>Incidentes generales</h2>
-        <p>Registra, filtra y actualiza incidentes sin salir del flujo operativo.</p>
+  <section class="stack stack--compact">
+    <header class="view-toolbar">
+      <div>
+        <h1 class="view-toolbar__title">Incidentes</h1>
+        <div class="view-toolbar__meta">
+          <span class="metric-chip">Total <strong>{{ total }}</strong></span>
+          <span class="metric-chip">Abiertos <strong>{{ openCount }}</strong></span>
+          <span class="metric-chip">Resueltos <strong>{{ resolvedCount }}</strong></span>
+        </div>
       </div>
-    </div>
-
-    <div class="stats-grid">
-      <article class="stat-card">
-        <p class="stat-card__label">Total incidentes</p>
-        <p class="stat-card__value">{{ rows.length }}</p>
-        <p class="stat-card__hint">Casos registrados en el módulo</p>
-      </article>
-      <article class="stat-card">
-        <p class="stat-card__label">Abiertos</p>
-        <p class="stat-card__value">{{ openCount }}</p>
-        <p class="stat-card__hint">Pendientes de gestión</p>
-      </article>
-      <article class="stat-card">
-        <p class="stat-card__label">Resueltos</p>
-        <p class="stat-card__value">{{ resolvedCount }}</p>
-        <p class="stat-card__hint">Con estado final</p>
-      </article>
-    </div>
+    </header>
 
     <div class="panel">
       <form class="grid-2" @submit.prevent="createIncident">
@@ -61,12 +47,9 @@
 
     <div class="panel">
       <div class="panel-header">
-        <div class="page-title">
-          <h2 style="font-size: 1.05rem">Listado de incidentes</h2>
-          <p>Consulta y actualiza estado con una sola tabla operativa.</p>
-        </div>
+        <h3 style="margin: 0; font-size: 1rem">Listado</h3>
       </div>
-      <DataTable :rows="incidentRows" :columns="incidentColumns" row-key="id" empty-text="Sin incidentes" :initial-page-size="10">
+      <DataTable :rows="incidentRows" :columns="incidentColumns" row-key="id" empty-text="Sin incidentes" :initial-page-size="25">
         <template #cell-status="{ row }">
           <select :value="row.status" :disabled="updatingId === row.id" @change="updateStatus(row.id, $event.target.value)">
             <option value="OPEN">OPEN</option>
@@ -78,6 +61,13 @@
           <span class="meta">{{ fmtDate(row.updatedAt) }}</span>
         </template>
       </DataTable>
+      <div class="table-footer" v-if="totalPages > 1">
+        <div class="table-footer__meta">Página {{ page }} de {{ totalPages }}</div>
+        <div class="table-footer__controls">
+          <button class="btn btn-ghost btn--sm" type="button" :disabled="page <= 1" @click="prevPage">Anterior</button>
+          <button class="btn btn-ghost btn--sm" type="button" :disabled="page >= totalPages" @click="nextPage">Siguiente</button>
+        </div>
+      </div>
     </div>
   </section>
 </template>
@@ -94,6 +84,9 @@ const ui = useUi();
 const { fetchCatalogBundle } = useCatalogs();
 
 const rows = ref([]);
+const total = ref(0);
+const page = ref(1);
+const limit = ref(25);
 const isLoading = ref(false);
 const isSubmitting = ref(false);
 const updatingId = ref(null);
@@ -127,12 +120,17 @@ const incidentRows = computed(() =>
 );
 const openCount = computed(() => rows.value.filter((incident) => incident.status === 'OPEN').length);
 const resolvedCount = computed(() => rows.value.filter((incident) => incident.status === 'RESOLVED').length);
+const totalPages = computed(() => Math.max(1, Math.ceil(total.value / limit.value)));
 
 async function loadData() {
   isLoading.value = true;
   try {
-    const [incidents, bundle] = await Promise.all([incidentsService.list(), fetchCatalogBundle()]);
-    rows.value = incidents || [];
+    const [payload, bundle] = await Promise.all([
+      incidentsService.list({ page: page.value, limit: limit.value }),
+      fetchCatalogBundle(),
+    ]);
+    rows.value = payload?.items || [];
+    total.value = payload?.total || rows.value.length;
     catalogs.products = bundle.products || [];
     catalogs.types = bundle.types || [];
     form.productId = catalogs.products[0]?.id || '';
@@ -167,15 +165,29 @@ async function createIncident() {
 
 async function updateStatus(id, status) {
   updatingId.value = id;
+  const previous = rows.value.find((row) => row.id === id);
+  if (previous) previous.status = status;
   try {
     await incidentsService.update(id, { status });
     ui.showToast('Estado de incidente actualizado', false);
-    await loadData();
   } catch (error) {
+    if (previous) await loadData();
     ui.showToast(error.message || 'No se pudo actualizar el incidente.', true);
   } finally {
     updatingId.value = null;
   }
+}
+
+function prevPage() {
+  if (page.value <= 1) return;
+  page.value -= 1;
+  loadData();
+}
+
+function nextPage() {
+  if (page.value >= totalPages.value) return;
+  page.value += 1;
+  loadData();
 }
 
 onMounted(loadData);

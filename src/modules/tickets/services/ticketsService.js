@@ -1,7 +1,7 @@
 import { request } from '../../../shared/services/httpClient';
 
 export const ticketsService = {
-  list: ({ q, from, to, productId, sortBy, sortDir, view, page = 1, limit = 25 } = {}) => {
+  list: ({ q, from, to, productId, sortBy, sortDir, view, page = 1, limit = 25, includeTabCounts = false } = {}) => {
     const params = new URLSearchParams();
     if (q && String(q).trim()) params.set('q', String(q).trim());
     if (from && String(from).trim()) params.set('from', String(from).trim());
@@ -10,6 +10,7 @@ export const ticketsService = {
     if (sortBy && String(sortBy).trim()) params.set('sortBy', String(sortBy).trim());
     if (sortDir && String(sortDir).trim()) params.set('sortDir', String(sortDir).trim());
     if (view && String(view).trim()) params.set('view', String(view).trim());
+    if (includeTabCounts) params.set('includeTabCounts', 'true');
     params.set('page', String(page));
     params.set('limit', String(limit));
     return request(`/tickets?${params.toString()}`);

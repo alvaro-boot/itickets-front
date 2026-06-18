@@ -1,54 +1,37 @@
 <template>
   <div class="app-shell shell-frame">
-    <header class="topbar">
+    <header class="topbar topbar--dense">
       <div class="topbar-brand-block">
         <RouterLink to="/tickets" class="brand brand--shell" aria-label="IT-Sistemas — inicio">
-          <img src="/images/icono.png" alt="" class="brand-icon brand-icon--topbar" width="64" height="64" decoding="async" />
+          <img src="/images/icono.png" alt="" class="brand-icon brand-icon--topbar" width="36" height="36" decoding="async" />
         </RouterLink>
-        <div class="topbar-brand-copy">
-          <strong>Operations Desk</strong>
-          <span>Control centralizado de soporte, seguimiento y asignación</span>
-        </div>
+        <strong class="topbar-brand-title">Operations Desk</strong>
       </div>
       <button class="menu-toggle" type="button" aria-label="Abrir menú" @click="toggleSidebar">☰</button>
-      <nav class="nav-actions" aria-label="Principal">
-        <div
+      <nav class="nav-actions nav-actions--dense" aria-label="Principal">
+        <select
           v-if="(auth.state.profile?.companies?.length || 0) > 1"
-          class="field-stack"
-          style="min-width: 220px; margin: 0"
+          id="active-company"
+          class="topbar-company-select"
+          :value="auth.state.profile?.activeCompanyId || auth.state.profile?.companyId || ''"
+          @change="handleSwitchCompany"
         >
-          <label for="active-company" style="font-size: 0.72rem; margin-bottom: 0.15rem">Empresa activa</label>
-          <select
-            id="active-company"
-            :value="auth.state.profile?.activeCompanyId || auth.state.profile?.companyId || ''"
-            @change="handleSwitchCompany"
-          >
-            <option v-for="company in auth.state.profile?.companies || []" :key="company.id" :value="company.id">
-              {{ company.name }}
-            </option>
-          </select>
-        </div>
-        <div class="nav-user-card">
-          <div class="nav-user-card__copy">
-            <strong>{{ auth.state.profile?.fullName || 'Sesion activa' }}</strong>
-            <span>{{ auth.state.profile?.email || 'Usuario autenticado' }}</span>
-          </div>
-          <div class="nav-user-card__avatar">
-            {{ initials }}
-          </div>
-        </div>
-        <button type="button" class="btn btn-ghost" @click="handleLogout">Salir</button>
+          <option v-for="company in auth.state.profile?.companies || []" :key="company.id" :value="company.id">
+            {{ company.name }}
+          </option>
+        </select>
+        <span class="topbar-user">{{ auth.state.profile?.fullName || 'Sesión' }}</span>
+        <div class="nav-user-card__avatar nav-user-card__avatar--dense">{{ initials }}</div>
+        <button type="button" class="btn btn-ghost btn--sm" @click="handleLogout">Salir</button>
       </nav>
     </header>
 
     <div class="layout shell-layout">
-      <aside class="sidebar" :hidden="false">
-        <RouterLink to="/tickets" class="sidebar-brand" aria-label="Inicio" @click="closeSidebar">
-          <img src="/images/icono.png" alt="" class="brand-icon brand-icon--sidebar" width="72" height="72" decoding="async" />
+      <aside class="sidebar sidebar--dense" :hidden="false">
+        <RouterLink to="/tickets" class="sidebar-brand sidebar-brand--dense" aria-label="Inicio" @click="closeSidebar">
+          <img src="/images/icono.png" alt="" class="brand-icon brand-icon--sidebar" width="36" height="36" decoding="async" />
         </RouterLink>
-        <h2>Navegación</h2>
-        <p class="meta">Accesos rápidos del sistema</p>
-        <nav class="menu" aria-label="Secciones">
+        <nav class="menu menu--dense" aria-label="Secciones">
           <RouterLink
             v-for="item in visibleItems"
             :key="item.to"
@@ -57,56 +40,23 @@
             @click="closeSidebar"
           >
             <span>{{ item.label }}</span>
-            <span>›</span>
           </RouterLink>
         </nav>
       </aside>
 
-      <main class="content content-shell">
-        <section v-if="!route.meta.hideHero" class="hero page-hero page-hero--compact">
-          <div class="actions-row page-hero__row">
-            <div>
-              <h1>{{ route.meta.title || 'Panel' }}</h1>
-              <p v-if="route.meta.subtitle">{{ route.meta.subtitle }}</p>
-            </div>
-            <div class="page-hero__actions">
-              <RouterLink
-                v-if="route.name === 'tickets'"
-                class="btn btn-primary"
-                to="/tickets/new"
-              >
-                Nuevo ticket
-              </RouterLink>
-              <RouterLink
-                v-if="route.name === 'ticket-detail'"
-                class="btn btn-ghost"
-                :to="ticketDetailBackTarget"
-              >
-                Lista
-              </RouterLink>
-              <button
-                v-else-if="route.meta.showBack !== false && route.name !== 'tickets'"
-                class="btn btn-ghost"
-                type="button"
-                @click="handleGoBack"
-              >
-                Atrás
-              </button>
-            </div>
-          </div>
-        </section>
+      <main class="content content-shell content-shell--dense">
         <section class="content-scroll">
-          <RouterView />
+          <RouterView v-slot="{ Component, route: childRoute }">
+            <KeepAlive :include="['tickets']">
+              <component :is="Component" :key="childRoute.name === 'tickets' ? 'tickets' : childRoute.fullPath" />
+            </KeepAlive>
+          </RouterView>
         </section>
       </main>
     </div>
   </div>
 
-  <div
-    class="sidebar-backdrop"
-    :hidden="!ui.state.sidebarOpen"
-    @click="closeSidebar"
-  ></div>
+  <div class="sidebar-backdrop" :hidden="!ui.state.sidebarOpen" @click="closeSidebar"></div>
   <ToastHost />
   <GlobalLoader />
 </template>
@@ -151,17 +101,6 @@ const visibleItems = computed(() => {
   });
 });
 
-const ticketDetailBackTarget = computed(() => {
-  const preserved = {};
-  for (const key of ['q', 'from', 'to', 'productId', 'sortBy', 'sortDir', 'view', 'page', 'limit']) {
-    const value = route.query[key];
-    if (value != null && String(value).trim() !== '') {
-      preserved[key] = value;
-    }
-  }
-  return { path: '/tickets', query: preserved };
-});
-
 const initials = computed(() => {
   const source = auth.state.profile?.fullName || auth.state.profile?.email || 'IT';
   return String(source)
@@ -186,14 +125,6 @@ function toggleSidebar() {
 function handleLogout() {
   auth.logout();
   router.push('/login');
-}
-
-function handleGoBack() {
-  if (window.history.length > 1) {
-    router.back();
-    return;
-  }
-  router.push('/tickets');
 }
 
 async function handleSwitchCompany(event) {

@@ -3,10 +3,15 @@ import { catalogsService } from '../../modules/catalogs/services/catalogsService
 
 const state = reactive({
   bundle: null,
+  fetchedAt: 0,
 });
 
+const CACHE_TTL_MS = 60_000;
+
 async function fetchCatalogBundle(force = false) {
-  if (state.bundle && !force) return state.bundle;
+  if (state.bundle && !force && Date.now() - state.fetchedAt < CACHE_TTL_MS) {
+    return state.bundle;
+  }
   try {
     state.bundle = await catalogsService.bundle();
   } catch {
@@ -17,13 +22,21 @@ async function fetchCatalogBundle(force = false) {
       catalogsService.types(),
       catalogsService.areas(),
     ]);
-    state.bundle = { statuses, priorities, products, types, areas };
+    state.bundle = {
+      statuses,
+      priorities,
+      products: products?.items || products || [],
+      types: types?.items || types || [],
+      areas: areas?.items || areas || [],
+    };
   }
+  state.fetchedAt = Date.now();
   return state.bundle;
 }
 
 function invalidateCatalogBundle() {
   state.bundle = null;
+  state.fetchedAt = 0;
 }
 
 export function useCatalogs() {

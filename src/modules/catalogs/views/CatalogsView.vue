@@ -1,29 +1,15 @@
 <template>
-  <section class="stack">
-    <div class="page-header">
-      <div class="page-title">
-        <h2>Catálogos</h2>
-        <p>Administra productos, tipos y áreas con una experiencia más clara y consistente.</p>
+  <section class="stack stack--compact">
+    <header class="view-toolbar">
+      <div>
+        <h1 class="view-toolbar__title">Catálogos</h1>
+        <div class="view-toolbar__meta">
+          <span class="metric-chip">Productos <strong>{{ products.length }}</strong></span>
+          <span class="metric-chip">Tipos <strong>{{ types.length }}</strong></span>
+          <span class="metric-chip">Áreas <strong>{{ areas.length }}</strong></span>
+        </div>
       </div>
-    </div>
-
-    <div class="stats-grid">
-      <article class="stat-card">
-        <p class="stat-card__label">Productos</p>
-        <p class="stat-card__value">{{ products.length }}</p>
-        <p class="stat-card__hint">Catálogo activo por compañía</p>
-      </article>
-      <article class="stat-card">
-        <p class="stat-card__label">Tipos</p>
-        <p class="stat-card__value">{{ types.length }}</p>
-        <p class="stat-card__hint">Clasificación disponible de tickets</p>
-      </article>
-      <article class="stat-card">
-        <p class="stat-card__label">Áreas</p>
-        <p class="stat-card__value">{{ areas.length }}</p>
-        <p class="stat-card__hint">Áreas solicitantes registradas</p>
-      </article>
-    </div>
+    </header>
 
     <div class="grid-2">
       <div class="panel">

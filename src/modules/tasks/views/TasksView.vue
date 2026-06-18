@@ -1,29 +1,15 @@
 <template>
-  <section class="stack">
-    <div class="page-header">
-      <div class="page-title">
-        <h2>Mis tareas diarias</h2>
-        <p>Organiza el trabajo personal, registra pendientes y marca avances rápido.</p>
+  <section class="stack stack--compact">
+    <header class="view-toolbar">
+      <div>
+        <h1 class="view-toolbar__title">Mis tareas</h1>
+        <div class="view-toolbar__meta">
+          <span class="metric-chip">Total <strong>{{ total }}</strong></span>
+          <span class="metric-chip">Pendientes <strong>{{ pendingCount }}</strong></span>
+          <span class="metric-chip">Hechas <strong>{{ doneCount }}</strong></span>
+        </div>
       </div>
-    </div>
-
-    <div class="stats-grid">
-      <article class="stat-card">
-        <p class="stat-card__label">Total</p>
-        <p class="stat-card__value">{{ rows.length }}</p>
-        <p class="stat-card__hint">Tareas del periodo visible</p>
-      </article>
-      <article class="stat-card">
-        <p class="stat-card__label">Pendientes</p>
-        <p class="stat-card__value">{{ pendingCount }}</p>
-        <p class="stat-card__hint">Requieren acción</p>
-      </article>
-      <article class="stat-card">
-        <p class="stat-card__label">Completadas</p>
-        <p class="stat-card__value">{{ doneCount }}</p>
-        <p class="stat-card__hint">Cerradas exitosamente</p>
-      </article>
-    </div>
+    </header>
 
     <div class="panel">
       <form class="grid-2" @submit.prevent="createTask">
@@ -52,19 +38,20 @@
     </div>
 
     <div class="panel">
-      <div class="panel-header">
-        <div class="page-title">
-          <h2 style="font-size: 1.05rem">Tablero de tareas</h2>
-          <p>Actualiza estado y da seguimiento rápido a tus pendientes.</p>
-        </div>
-      </div>
-      <DataTable :rows="taskRows" :columns="taskColumns" row-key="id" empty-text="No tienes tareas registradas" :initial-page-size="10">
+      <DataTable :rows="taskRows" :columns="taskColumns" row-key="id" empty-text="No tienes tareas registradas" :initial-page-size="25">
         <template #cell-actionLabel="{ row }">
           <button class="btn btn-ghost" type="button" :disabled="togglingId === row.id" @click="toggleTask(row)">
             {{ togglingId === row.id ? 'Actualizando...' : row.actionLabel }}
           </button>
         </template>
       </DataTable>
+      <div class="table-footer" v-if="totalPages > 1">
+        <div class="table-footer__meta">Página {{ page }} de {{ totalPages }}</div>
+        <div class="table-footer__controls">
+          <button class="btn btn-ghost btn--sm" type="button" :disabled="page <= 1" @click="prevPage">Anterior</button>
+          <button class="btn btn-ghost btn--sm" type="button" :disabled="page >= totalPages" @click="nextPage">Siguiente</button>
+        </div>
+      </div>
     </div>
   </section>
 </template>
@@ -77,6 +64,9 @@ import DataTable from '../../../shared/components/DataTable.vue';
 
 const ui = useUi();
 const rows = ref([]);
+const total = ref(0);
+const page = ref(1);
+const limit = ref(25);
 const isLoading = ref(false);
 const isSubmitting = ref(false);
 const togglingId = ref(null);
@@ -102,11 +92,14 @@ const taskRows = computed(() =>
 );
 const pendingCount = computed(() => rows.value.filter((task) => !task.isDone).length);
 const doneCount = computed(() => rows.value.filter((task) => task.isDone).length);
+const totalPages = computed(() => Math.max(1, Math.ceil(total.value / limit.value)));
 
 async function loadTasks() {
   isLoading.value = true;
   try {
-    rows.value = await tasksService.mine();
+    const payload = await tasksService.mine({ page: page.value, limit: limit.value });
+    rows.value = payload?.items || [];
+    total.value = payload?.total || rows.value.length;
   } catch (error) {
     ui.showToast(error.message || 'No se pudieron cargar tus tareas.', true);
   } finally {
@@ -136,14 +129,28 @@ async function createTask() {
 
 async function toggleTask(task) {
   togglingId.value = task.id;
+  const nextDone = !task.isDone;
+  task.isDone = nextDone;
   try {
-    await tasksService.update(task.id, { isDone: !task.isDone });
-    await loadTasks();
+    await tasksService.update(task.id, { isDone: nextDone });
   } catch (error) {
+    task.isDone = !nextDone;
     ui.showToast(error.message || 'No se pudo actualizar la tarea.', true);
   } finally {
     togglingId.value = null;
   }
+}
+
+function prevPage() {
+  if (page.value <= 1) return;
+  page.value -= 1;
+  loadTasks();
+}
+
+function nextPage() {
+  if (page.value >= totalPages.value) return;
+  page.value += 1;
+  loadTasks();
 }
 
 onMounted(loadTasks);

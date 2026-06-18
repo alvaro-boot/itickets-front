@@ -1,5 +1,18 @@
 <template>
   <section class="stack stack--compact">
+    <header class="view-toolbar">
+      <div>
+        <h1 class="view-toolbar__title">Centro de tickets</h1>
+        <div class="view-toolbar__meta">
+          <span class="metric-chip">Total <strong>{{ tabTotals.all || 0 }}</strong></span>
+          <span class="metric-chip">Míos <strong>{{ tabTotals.mine || 0 }}</strong></span>
+          <span class="metric-chip">Sin asignar <strong>{{ tabTotals.unassigned || 0 }}</strong></span>
+        </div>
+      </div>
+      <div class="view-toolbar__actions">
+        <RouterLink class="btn btn-primary btn--sm" to="/tickets/new">Nuevo ticket</RouterLink>
+      </div>
+    </header>
     <div class="panel search-panel search-panel--compact" role="region" aria-label="Filtros de tickets">
       <form class="search-panel__row" @submit.prevent="applyFilters">
         <div class="field-stack search-panel__field search-panel__field--query">
@@ -116,10 +129,8 @@
         <tbody>
           <tr v-if="loading">
             <td colspan="5">
-              <div class="skeleton-stack">
-                <div class="skeleton-line skeleton-line--lg skeleton-line--w75"></div>
-                <div class="skeleton-line skeleton-line--w90"></div>
-                <div class="skeleton-line skeleton-line--w60"></div>
+              <div class="skeleton-stack skeleton-rows">
+                <div v-for="n in 6" :key="n" class="skeleton-line skeleton-line--lg skeleton-line--w90"></div>
               </div>
             </td>
           </tr>
@@ -200,6 +211,8 @@ import { useCatalogs } from '../../../shared/composables/useCatalogs';
 import { useUi } from '../../../shared/composables/useUi';
 import { fmtDate, priorityClass } from '../../../shared/utils/format';
 
+defineOptions({ name: 'tickets' });
+
 const ui = useUi();
 const route = useRoute();
 const router = useRouter();
@@ -216,7 +229,7 @@ const rows = ref([]);
 const products = ref([]);
 const activeTab = ref('all');
 const page = ref(1);
-const limit = ref(50);
+const limit = ref(25);
 const sortBy = ref('updatedAt');
 const sortDir = ref('desc');
 const total = ref(0);
@@ -247,7 +260,7 @@ const currentListQuery = computed(() => ({
       : undefined,
   view: activeTab.value !== 'all' ? activeTab.value : undefined,
   page: page.value > 1 ? String(page.value) : undefined,
-  limit: limit.value !== 50 ? String(limit.value) : undefined,
+  limit: limit.value !== 25 ? String(limit.value) : undefined,
 }));
 
 function parsePositiveInt(value, fallback) {
@@ -264,8 +277,8 @@ function hydrateFromRouteQuery() {
   const incomingView = String(route.query.view || 'all').trim();
   activeTab.value = tabs.some((tab) => tab.key === incomingView) ? incomingView : 'all';
   page.value = parsePositiveInt(route.query.page, 1);
-  const incomingLimit = parsePositiveInt(route.query.limit, 50);
-  limit.value = [10, 25, 50].includes(incomingLimit) ? incomingLimit : 50;
+  const incomingLimit = parsePositiveInt(route.query.limit, 25);
+  limit.value = [10, 25, 50].includes(incomingLimit) ? incomingLimit : 25;
   const incomingSortBy = String(route.query.sortBy || 'updatedAt').trim();
   const allowedSortBy = ['title', 'product', 'priority', 'assignee', 'updatedAt'];
   sortBy.value = allowedSortBy.includes(incomingSortBy) ? incomingSortBy : 'updatedAt';
@@ -296,26 +309,17 @@ async function loadTickets({ syncRoute = false, refreshTotals = false } = {}) {
       view: activeTab.value,
       page: page.value,
       limit: limit.value,
+      includeTabCounts: refreshTotals,
     };
-    const tabParams = {
-      q: query.value,
-      from: filters.from,
-      to: filters.to,
-      productId: filters.productId,
-    };
-    const listPromise = ticketsService.list(listParams);
-    const totalsPromise = refreshTotals
-      ? ticketsService.tabCounts(tabParams).catch(() => null)
-      : Promise.resolve(null);
-    const [payload, totals] = await Promise.all([listPromise, totalsPromise]);
+    const payload = await ticketsService.list(listParams);
     rows.value = payload?.items || [];
     total.value = payload?.total || 0;
-    if (refreshTotals && totals) {
+    if (payload?.tabCounts) {
       tabTotals.value = {
-        all: Number(totals.all ?? 0),
-        mine: Number(totals.mine ?? 0),
-        unassigned: Number(totals.unassigned ?? 0),
-        closed: Number(totals.closed ?? 0),
+        all: Number(payload.tabCounts.all ?? 0),
+        mine: Number(payload.tabCounts.mine ?? 0),
+        unassigned: Number(payload.tabCounts.unassigned ?? 0),
+        closed: Number(payload.tabCounts.closed ?? 0),
       };
     }
     tabTotals.value = {
@@ -413,6 +417,6 @@ onMounted(async () => {
 
 watch(activeTab, () => {
   page.value = 1;
-  loadTickets({ syncRoute: true, refreshTotals: true });
+  loadTickets({ syncRoute: true });
 });
 </script>

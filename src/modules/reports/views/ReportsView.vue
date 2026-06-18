@@ -1,11 +1,15 @@
 <template>
-  <section class="stack">
-    <div class="page-header">
-      <div class="page-title">
-        <h2>Reportes operativos</h2>
-        <p>Consulta rendimiento y carga con métricas, gráficos y tablas en un solo flujo.</p>
+  <section class="stack stack--compact">
+    <header class="view-toolbar">
+      <div>
+        <h1 class="view-toolbar__title">Reportes operativos</h1>
+        <div v-if="distribution.summary" class="view-toolbar__meta">
+          <span class="metric-chip">Resueltos <strong>{{ distribution.summary.resolved || 0 }}</strong></span>
+          <span class="metric-chip">Promedio <strong>{{ avgHours.toFixed(1) }} h</strong></span>
+          <span class="metric-chip">Pendientes <strong>{{ distribution.summary.pending || 0 }}</strong></span>
+        </div>
       </div>
-    </div>
+    </header>
 
     <div class="panel search-panel">
       <form class="grid-2" @submit.prevent="loadReports">

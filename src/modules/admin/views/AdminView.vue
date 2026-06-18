@@ -1,29 +1,15 @@
 <template>
-  <section class="stack">
-    <div class="page-header">
-      <div class="page-title">
-        <h2>Administración global</h2>
-        <p>Gestiona empresas, usuarios y módulos con feedback inmediato de cada cambio.</p>
+  <section class="stack stack--compact">
+    <header class="view-toolbar">
+      <div>
+        <h1 class="view-toolbar__title">Administración global</h1>
+        <div class="view-toolbar__meta">
+          <span class="metric-chip">Empresas <strong>{{ companies.length }}</strong></span>
+          <span class="metric-chip">Permisos <strong>{{ permissions.length }}</strong></span>
+          <span class="metric-chip">Módulos activos <strong>{{ enabledModulesCount }}</strong></span>
+        </div>
       </div>
-    </div>
-
-    <div class="stats-grid">
-      <article class="stat-card">
-        <p class="stat-card__label">Empresas</p>
-        <p class="stat-card__value">{{ companies.length }}</p>
-        <p class="stat-card__hint">Organizaciones registradas</p>
-      </article>
-      <article class="stat-card">
-        <p class="stat-card__label">Permisos</p>
-        <p class="stat-card__value">{{ permissions.length }}</p>
-        <p class="stat-card__hint">Controles de acceso disponibles</p>
-      </article>
-      <article class="stat-card">
-        <p class="stat-card__label">Módulos activos</p>
-        <p class="stat-card__value">{{ enabledModulesCount }}</p>
-        <p class="stat-card__hint">Suma de módulos habilitados por empresa</p>
-      </article>
-    </div>
+    </header>
 
     <div v-if="isLoading" class="panel">
       <p class="meta">Cargando administración...</p>
@@ -147,16 +133,15 @@ const enabledModulesCount = computed(() =>
 async function loadAdmin() {
   isLoading.value = true;
   try {
-    const [companyList, permissionList] = await Promise.all([adminService.companies(), adminService.permissions()]);
+    const [companyList, permissionList, companiesWithModules] = await Promise.all([
+      adminService.companies(),
+      adminService.permissions(),
+      adminService.companiesWithModules(),
+    ]);
     companies.value = companyList || [];
     permissions.value = permissionList || [];
     userForm.value.companyId = companies.value[0]?.id || '';
-    companyRows.value = await Promise.all(
-      companies.value.map(async (company) => ({
-        company,
-        modules: await adminService.companyModules(company.id),
-      })),
-    );
+    companyRows.value = companiesWithModules || [];
   } catch (error) {
     ui.showToast(error.message || 'No se pudo cargar administración global.', true);
   } finally {
@@ -166,15 +151,22 @@ async function loadAdmin() {
 
 async function toggleModule(companyId, modules, changedCode, checked) {
   updatingCompanyId.value = companyId;
-  const enabledModuleCodes = modules
+  const row = companyRows.value.find((item) => item.company.id === companyId);
+  const previous = row ? row.modules.map((m) => ({ ...m })) : [];
+  if (row) {
+    row.modules = modules.map((module) =>
+      module.moduleCode === changedCode ? { ...module, isEnabled: checked } : module,
+    );
+  }
+  const enabledModuleCodes = (row?.modules || modules)
     .filter((module) => (module.moduleCode === changedCode ? checked : module.isEnabled))
     .map((module) => module.moduleCode);
 
   try {
     await adminService.setCompanyModules(companyId, { enabledModuleCodes });
     ui.showToast('Módulos actualizados', false);
-    await loadAdmin();
   } catch (error) {
+    if (row) row.modules = previous;
     ui.showToast(error.message || 'No se pudieron actualizar los módulos.', true);
   } finally {
     updatingCompanyId.value = null;

@@ -1,29 +1,8 @@
 <template>
-  <section class="stack">
-    <div class="page-header">
-      <div class="page-title">
-        <h2>Mi perfil</h2>
-        <p>Mantén actualizados tus datos y protege tu acceso con cambios de contraseña.</p>
-      </div>
-    </div>
-
-    <div class="stats-grid">
-      <article class="stat-card">
-        <p class="stat-card__label">Nombre</p>
-        <p class="stat-card__value" style="font-size: 1.1rem">{{ profileForm.fullName || '—' }}</p>
-        <p class="stat-card__hint">Identidad visible en el sistema</p>
-      </article>
-      <article class="stat-card">
-        <p class="stat-card__label">Correo</p>
-        <p class="stat-card__value" style="font-size: 1.1rem">{{ profileForm.email || '—' }}</p>
-        <p class="stat-card__hint">Cuenta principal de acceso</p>
-      </article>
-      <article class="stat-card">
-        <p class="stat-card__label">Teléfono</p>
-        <p class="stat-card__value" style="font-size: 1.1rem">{{ profileForm.phone || '—' }}</p>
-        <p class="stat-card__hint">Canal de contacto operativo</p>
-      </article>
-    </div>
+  <section class="stack stack--compact">
+    <header class="view-toolbar">
+      <h1 class="view-toolbar__title">Mi perfil</h1>
+    </header>
 
     <div v-if="isLoading" class="panel">
       <p class="meta">Cargando perfil...</p>

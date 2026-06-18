@@ -1,5 +1,11 @@
 <template>
   <section class="stack stack--compact">
+    <header class="view-toolbar">
+      <h1 class="view-toolbar__title">Nuevo ticket</h1>
+      <div class="view-toolbar__actions">
+        <RouterLink class="btn btn-ghost btn--sm" to="/tickets">Cancelar</RouterLink>
+      </div>
+    </header>
     <section class="panel ticket-panel">
       <form class="grid-2" @submit.prevent="submit">
         <div class="field-stack" style="grid-column: 1 / -1">
