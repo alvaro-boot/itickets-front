@@ -1,6 +1,6 @@
 <template>
-  <section class="jira-page stack stack--compact">
-    <div v-if="loading" class="panel"><p class="meta">Cargando ticket...</p></div>
+  <section class="jira-page jira-issue-view">
+    <div v-if="loading" class="jira-issue-view__loading"><p class="meta">Cargando ticket...</p></div>
 
     <template v-else-if="ticket">
       <div v-if="isBusy" class="ticket-loading-hint" role="status" aria-live="polite">
@@ -8,54 +8,62 @@
         <span>{{ busyMessage }}</span>
       </div>
 
-      <div class="jira-detail-layout">
-        <div class="jira-detail-main">
-          <article class="panel ticket-panel">
-            <div style="display:flex;align-items:center;gap:0.65rem;margin-bottom:0.65rem">
+      <div class="jira-issue-view__layout">
+        <div class="jira-issue-view__main">
+          <header class="jira-issue-view__header">
+            <div class="jira-issue-view__type-row">
+              <span class="jira-issue-view__type-icon" aria-hidden="true">◆</span>
               <IssueKeyLink :ticket="ticket" />
-              <RouterLink class="btn btn-ghost btn--sm" :to="backToList">← Lista</RouterLink>
+              <RouterLink class="jira-issue-view__back" :to="backToList">← Volver</RouterLink>
             </div>
-            <div class="field-stack">
-              <label for="title">Resumen</label>
-              <input id="title" v-model.trim="form.title" required minlength="3" />
-            </div>
-            <div class="field-stack" style="margin-top:0.75rem">
-              <label for="description">Descripción</label>
-              <RichTextEditor id="description" v-model="form.description" />
-            </div>
-          </article>
+            <input
+              id="title"
+              v-model.trim="form.title"
+              class="jira-issue-summary-input"
+              required
+              minlength="3"
+              aria-label="Resumen del ticket"
+            />
+          </header>
 
-          <article class="panel ticket-panel" style="margin-top:0.75rem">
-            <h2 style="margin:0 0 0.75rem;font-size:1rem;font-weight:600">Actividad</h2>
-            <form class="ticket-inline-form comment-composer" @submit.prevent="addComment">
-              <div class="field-stack">
-                <RichTextEditor id="body" v-model="commentBody" compact placeholder="Añadir un comentario..." :disabled="isBusy" />
-              </div>
-              <div class="actions-row" style="justify-content:space-between;margin-top:0.5rem">
+          <section class="jira-issue-view__section">
+            <h2 class="jira-issue-view__section-title">Descripción</h2>
+            <RichTextEditor id="description" v-model="form.description" />
+          </section>
+
+          <section class="jira-issue-view__section jira-issue-view__activity">
+            <h2 class="jira-issue-view__section-title">Actividad</h2>
+            <form class="jira-issue-view__comment-form" @submit.prevent="addComment">
+              <RichTextEditor
+                id="body"
+                v-model="commentBody"
+                compact
+                placeholder="Añadir un comentario..."
+                :disabled="isBusy"
+              />
+              <div class="jira-issue-view__comment-actions">
                 <input ref="commentFileInput" type="file" :disabled="isBusy" />
                 <button class="btn btn-ghost btn--sm" type="button" :disabled="isBusy" @click="uploadAttachment">Adjuntar</button>
+                <button class="btn btn-primary btn--sm" type="submit" :disabled="isBusy">
+                  {{ isCommenting ? 'Publicando...' : 'Comentar' }}
+                </button>
               </div>
-              <button class="btn btn-primary btn--sm" type="submit" :disabled="isBusy" style="margin-top:0.5rem">
-                {{ isCommenting ? 'Publicando...' : 'Comentar' }}
-              </button>
             </form>
 
             <ActivityFeed :items="activityItems" />
 
-            <div v-for="comment in ticket.comments || []" :key="`att-${comment.id}`" class="stack" style="margin-top:0.5rem">
-              <div v-if="extractAttachments(comment.body).length" class="stack">
+            <div v-for="comment in ticket.comments || []" :key="`att-${comment.id}`">
+              <div v-if="extractAttachments(comment.body).length" class="jira-issue-view__attachments">
                 <article
                   v-for="(attachment, attIdx) in extractAttachments(comment.body)"
                   :key="`${String(comment.id)}-${attIdx}`"
-                  class="panel"
-                  style="padding:0.6rem"
+                  class="jira-issue-view__attachment"
                 >
                   <template v-if="attachment.isImage">
                     <img
                       v-if="resolvedImageSrc[attachmentPreviewKey(comment, attIdx)]"
                       :src="resolvedImageSrc[attachmentPreviewKey(comment, attIdx)]"
                       alt="Imagen adjunta"
-                      style="max-width:100%;border-radius:6px;margin-bottom:0.5rem"
                       @error="onAttachmentImageError(comment, attIdx)"
                     />
                   </template>
@@ -66,94 +74,87 @@
                 </article>
               </div>
             </div>
-          </article>
+          </section>
         </div>
 
-        <MetaPanel title="Detalles">
-          <div class="jira-meta-row">
-            <label for="statusId">Estado</label>
-            <select id="statusId" v-model="form.statusId">
+        <aside class="jira-issue-view__sidebar jira-meta-panel">
+          <h2 class="jira-issue-view__sidebar-title">Detalles</h2>
+
+          <JiraFieldRow label="Estado">
+            <select id="statusId" v-model="form.statusId" class="jira-field-control">
               <option v-for="status in catalogs.statuses" :key="status.id" :value="status.id">{{ status.name }}</option>
             </select>
-          </div>
-          <div v-if="selectedStatusIsFinal" class="jira-meta-row">
-            <label for="resolvedAt">Fecha de solución</label>
-            <input id="resolvedAt" v-model="form.resolvedAt" type="date" />
-          </div>
-          <div class="jira-meta-row">
-            <label for="priorityId">Prioridad</label>
-            <select id="priorityId" v-model="form.priorityId">
+          </JiraFieldRow>
+          <JiraFieldRow v-if="selectedStatusIsFinal" label="Fecha de solución">
+            <input id="resolvedAt" v-model="form.resolvedAt" type="date" class="jira-field-control" />
+          </JiraFieldRow>
+          <JiraFieldRow label="Prioridad">
+            <select id="priorityId" v-model="form.priorityId" class="jira-field-control">
               <option v-for="priority in catalogs.priorities" :key="priority.id" :value="priority.id">{{ priority.name }}</option>
             </select>
-          </div>
-          <div class="jira-meta-row">
-            <label for="assigneeId">Asignado</label>
-            <select id="assigneeId" v-model="form.assigneeId">
+          </JiraFieldRow>
+          <JiraFieldRow label="Asignado">
+            <select id="assigneeId" v-model="form.assigneeId" class="jira-field-control">
               <option value="">Sin asignar</option>
               <option v-for="user in assignableUsers" :key="user.id" :value="String(user.id)">{{ user.fullName }}</option>
             </select>
-          </div>
-          <div class="jira-meta-row">
-            <label for="productId">Producto</label>
-            <select id="productId" v-model="form.productId">
+          </JiraFieldRow>
+          <JiraFieldRow label="Producto">
+            <select id="productId" v-model="form.productId" class="jira-field-control">
               <option v-for="product in catalogs.products" :key="product.id" :value="product.id">{{ product.name }}</option>
             </select>
-          </div>
-          <div class="jira-meta-row">
-            <label for="ticketTypeId">Tipo</label>
-            <select id="ticketTypeId" v-model="form.ticketTypeId">
+          </JiraFieldRow>
+          <JiraFieldRow label="Tipo">
+            <select id="ticketTypeId" v-model="form.ticketTypeId" class="jira-field-control">
               <option v-for="type in catalogs.types" :key="type.id" :value="type.id">{{ type.name }}</option>
             </select>
-          </div>
-          <div class="jira-meta-row">
-            <label for="areaId">Área</label>
-            <select id="areaId" v-model="form.areaId">
+          </JiraFieldRow>
+          <JiraFieldRow label="Área">
+            <select id="areaId" v-model="form.areaId" class="jira-field-control">
               <option value="">Sin área</option>
               <option v-for="area in catalogs.areas" :key="area.id" :value="area.id">{{ area.name }}</option>
             </select>
-          </div>
-          <div class="jira-meta-row">
-            <label for="requesterName">Solicitante</label>
-            <input id="requesterName" v-model.trim="form.requesterName" />
-          </div>
-          <div class="jira-meta-row">
-            <label for="requesterPhone">Teléfono</label>
-            <input id="requesterPhone" v-model.trim="form.requesterPhone" />
-          </div>
-          <div class="jira-meta-row">
-            <span class="meta">Creado</span>
+          </JiraFieldRow>
+          <JiraFieldRow label="Solicitante">
+            <input id="requesterName" v-model.trim="form.requesterName" class="jira-field-control" />
+          </JiraFieldRow>
+          <JiraFieldRow label="Teléfono">
+            <input id="requesterPhone" v-model.trim="form.requesterPhone" class="jira-field-control" />
+          </JiraFieldRow>
+          <JiraFieldRow label="Creado">
             <span>{{ fmtDate(ticket.createdAt) }}</span>
-          </div>
-          <div class="jira-meta-row">
-            <span class="meta">Actualizado</span>
+          </JiraFieldRow>
+          <JiraFieldRow label="Actualizado">
             <span>{{ fmtDate(ticket.updatedAt) }}</span>
-          </div>
-          <div class="jira-meta-row">
-            <span class="meta">Tiempo registrado</span>
+          </JiraFieldRow>
+          <JiraFieldRow label="Tiempo registrado">
             <span>{{ ticket.totalLoggedMinutes || 0 }} min</span>
-          </div>
-          <div v-if="showWorklogs" class="jira-meta-row">
-            <label for="worklogAmount">Registrar tiempo</label>
-            <input id="worklogAmount" v-model.number="worklog.amount" type="number" min="1" />
-            <select id="worklogUnit" v-model="worklog.unit" style="margin-top:0.35rem">
-              <option value="minutes">Minutos</option>
-              <option value="hours">Horas</option>
-              <option value="days">Días</option>
-            </select>
-            <input id="worklogNote" v-model="worklog.note" placeholder="Nota" style="margin-top:0.35rem" />
-          </div>
-          <div class="jira-meta-row">
-            <label for="subticketQuantity">Subtickets</label>
-            <input id="subticketQuantity" v-model.number="subticketQuantity" type="number" min="1" max="20" />
-          </div>
-          <div class="actions-row" style="flex-direction:column;gap:0.35rem;margin-top:0.5rem">
+          </JiraFieldRow>
+
+          <template v-if="showWorklogs">
+            <JiraFieldRow label="Registrar tiempo">
+              <input id="worklogAmount" v-model.number="worklog.amount" type="number" min="1" class="jira-field-control" />
+              <select id="worklogUnit" v-model="worklog.unit" class="jira-field-control jira-field-control--spaced">
+                <option value="minutes">Minutos</option>
+                <option value="hours">Horas</option>
+                <option value="days">Días</option>
+              </select>
+              <input id="worklogNote" v-model="worklog.note" placeholder="Nota" class="jira-field-control jira-field-control--spaced" />
+            </JiraFieldRow>
+          </template>
+
+          <JiraFieldRow label="Subtickets">
+            <input id="subticketQuantity" v-model.number="subticketQuantity" type="number" min="1" max="20" class="jira-field-control" />
+          </JiraFieldRow>
+
+          <div class="jira-issue-view__sidebar-actions">
             <button class="btn btn-primary" type="button" :disabled="isBusy" @click="saveTicket">
               {{ isSaving ? 'Guardando...' : 'Guardar' }}
             </button>
             <button class="btn btn-ghost btn--sm" type="button" :disabled="isBusy" @click="createSubtickets">Crear subtickets</button>
             <button class="btn btn-ghost btn--sm" type="button" :disabled="isBusy" @click="duplicateTicket">Duplicar</button>
           </div>
-        </MetaPanel>
+        </aside>
       </div>
     </template>
   </section>
@@ -169,7 +170,7 @@ import { useUi } from '../../../shared/composables/useUi';
 import { uploadsService } from '../../../shared/services/uploadsService';
 import { eventText, fmtDate } from '../../../shared/utils/format';
 import IssueKeyLink from '../../../shared/components/IssueKeyLink.vue';
-import MetaPanel from '../../../shared/components/MetaPanel.vue';
+import JiraFieldRow from '../../../shared/components/JiraFieldRow.vue';
 import ActivityFeed from '../../../shared/components/ActivityFeed.vue';
 import { usePageChrome } from '../../../shared/composables/usePageChrome';
 import { isRichHtmlEmpty, stripUrlsForDisplay } from '../../../shared/utils/richHtml';

@@ -14,20 +14,14 @@
       </div>
 
       <nav class="nav-actions nav-actions--dense topbar__right" aria-label="Principal">
-        <div v-if="createOptions.length" class="create-menu" ref="createMenuRef">
-          <button type="button" class="btn btn-primary btn--sm" @click="toggleCreateMenu">Crear</button>
-          <div v-if="createOpen" class="create-menu__dropdown">
-            <RouterLink
-              v-for="opt in createOptions"
-              :key="opt.to"
-              class="create-menu__item"
-              :to="opt.to"
-              @click="createOpen = false"
-            >
-              {{ opt.label }}
-            </RouterLink>
-          </div>
-        </div>
+        <button
+          v-if="canCreateTicket"
+          type="button"
+          class="btn btn-primary btn--sm jira-create-btn"
+          @click="openCreateIssue"
+        >
+          Crear
+        </button>
         <select
           v-if="(auth.state.profile?.companies?.length || 0) > 1"
           id="active-company"
@@ -84,10 +78,11 @@
   <div class="sidebar-backdrop" :hidden="!ui.state.sidebarOpen" @click="closeSidebar"></div>
   <ToastHost />
   <GlobalLoader />
+  <CreateIssueModal :open="createIssueOpen" @close="closeCreateIssue" />
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, watch } from 'vue';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
 import ToastHost from '../../shared/components/ToastHost.vue';
 import GlobalLoader from '../../shared/components/GlobalLoader.vue';
@@ -96,6 +91,8 @@ import PageBreadcrumbs from '../../shared/components/PageBreadcrumbs.vue';
 import UserAvatar from '../../shared/components/UserAvatar.vue';
 import { useAuth } from '../../shared/composables/useAuth';
 import { useUi } from '../../shared/composables/useUi';
+import CreateIssueModal from '../../modules/tickets/components/CreateIssueModal.vue';
+import { useCreateIssue } from '../../shared/composables/useCreateIssue';
 import { usePageChrome } from '../../shared/composables/usePageChrome';
 
 const auth = useAuth();
@@ -103,8 +100,7 @@ const ui = useUi();
 const route = useRoute();
 const router = useRouter();
 const { breadcrumbCurrent, clearBreadcrumbCurrent } = usePageChrome();
-const createOpen = ref(false);
-const createMenuRef = ref(null);
+const { createIssueOpen, openCreateIssue, closeCreateIssue } = useCreateIssue();
 
 const iconList = '<svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>';
 const iconIncident = '<svg viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>';
@@ -116,8 +112,15 @@ const iconProfile = '<svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a
 
 const sections = [
   {
-    label: 'Tickets',
-    items: [{ to: '/tickets', label: 'Todos los tickets', key: 'tickets', icon: iconList }],
+    label: 'Para ti',
+    items: [
+      { to: '/tickets?view=mine', label: 'Asignados a mí', key: 'tickets-mine', icon: iconTask, view: 'mine' },
+      { to: '/tickets?view=unassigned', label: 'Sin asignar', key: 'tickets-unassigned', icon: iconIncident, view: 'unassigned' },
+    ],
+  },
+  {
+    label: 'Proyecto',
+    items: [{ to: '/tickets', label: 'Todos los tickets', key: 'tickets', icon: iconList, view: 'all' }],
   },
   {
     label: 'Operaciones',
@@ -143,8 +146,8 @@ const sections = [
 function canSeeItem(item) {
   const profile = auth.state.profile;
   if (!profile) return true;
+  if (item.key?.startsWith('tickets')) return profile.enabledModules?.includes('tickets');
   if (item.key === 'admin') return profile.permissions?.includes('companies.manage');
-  if (item.key === 'tickets') return profile.enabledModules?.includes('tickets');
   if (item.key === 'incidents') return profile.enabledModules?.includes('incidents');
   if (item.key === 'tasks') return profile.enabledModules?.includes('tasks');
   if (item.key === 'reports') return profile.enabledModules?.includes('tickets');
@@ -163,22 +166,18 @@ const visibleSections = computed(() =>
     .filter((section) => section.items.length > 0),
 );
 
+const canCreateTicket = computed(() => auth.state.profile?.enabledModules?.includes('tickets'));
 const canSearchTickets = computed(() => auth.state.profile?.enabledModules?.includes('tickets'));
 
-const createOptions = computed(() => {
-  const opts = [];
-  if (auth.state.profile?.enabledModules?.includes('tickets')) {
-    opts.push({ to: '/tickets/new', label: 'Ticket' });
-  }
-  if (auth.state.profile?.enabledModules?.includes('incidents')) {
-    opts.push({ to: '/incidents', label: 'Incidente' });
-  }
-  return opts;
-});
-
 function isActive(item) {
+  if (item.key?.startsWith('tickets')) {
+    if (item.view && item.view !== 'all') {
+      return route.path === '/tickets' && route.query.view === item.view;
+    }
+    return route.path === '/tickets' && (!route.query.view || route.query.view === 'all');
+  }
   if (item.to === '/tickets') {
-    return route.path === '/tickets' || (route.path.startsWith('/tickets/') && route.path !== '/tickets/new');
+    return route.path === '/tickets' || (route.path.startsWith('/tickets/') && !route.path.endsWith('/new'));
   }
   return route.path === item.to || route.path.startsWith(`${item.to}/`);
 }
@@ -194,21 +193,6 @@ function toggleSidebar() {
   document.body.classList.toggle('sidebar-open', nextValue);
 }
 
-function toggleCreateMenu() {
-  createOpen.value = !createOpen.value;
-}
-
-function onDocumentClick(event) {
-  if (!createMenuRef.value?.contains(event.target)) {
-    createOpen.value = false;
-  }
-}
-
-function handleLogout() {
-  auth.logout();
-  router.push('/login');
-}
-
 async function handleSwitchCompany(event) {
   const companyId = String(event.target?.value || '');
   const currentCompanyId = auth.state.profile?.activeCompanyId || auth.state.profile?.companyId || '';
@@ -221,8 +205,10 @@ async function handleSwitchCompany(event) {
   }
 }
 
-onMounted(() => document.addEventListener('click', onDocumentClick));
-onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick));
+function handleLogout() {
+  auth.logout();
+  router.push('/login');
+}
 
 watch(
   () => route.fullPath,

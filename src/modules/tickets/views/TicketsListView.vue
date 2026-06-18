@@ -1,22 +1,29 @@
 <template>
-  <section class="jira-page stack stack--compact">
-    <header class="jira-page-header">
-      <h1>Todos los tickets</h1>
-      <p class="jira-page-header__sub">
-        Total {{ tabTotals.all || 0 }} · Míos {{ tabTotals.mine || 0 }} · Sin asignar {{ tabTotals.unassigned || 0 }}
-      </p>
+  <section class="jira-page jira-navigator">
+    <header class="jira-navigator__header">
+      <div class="jira-navigator__title-row">
+        <h1 class="jira-navigator__title">{{ pageTitle }}</h1>
+        <span class="jira-navigator__count">{{ total }} tickets</span>
+      </div>
+      <form class="jira-navigator__toolbar" @submit.prevent="applyFilters">
+        <div class="jira-navigator__search">
+          <input
+            id="ticket-search"
+            v-model.trim="query"
+            type="search"
+            placeholder="Buscar por título o COOT-123"
+            aria-label="Buscar tickets"
+            @keyup.enter="applyFilters"
+          />
+        </div>
+        <button type="button" class="btn btn-ghost btn--sm" :aria-expanded="filtersOpen" @click="filtersOpen = !filtersOpen">
+          {{ filtersOpen ? 'Ocultar filtros' : 'Más filtros' }}
+        </button>
+        <button class="btn btn-primary btn--sm" type="submit">Buscar</button>
+      </form>
     </header>
 
-    <form class="jira-filters" @submit.prevent="applyFilters">
-      <div class="field-stack search-panel__field search-panel__field--query">
-        <label for="ticket-search">Buscar</label>
-        <input
-          id="ticket-search"
-          v-model.trim="query"
-          placeholder="Título o COOT-123"
-          @keyup.enter="applyFilters"
-        />
-      </div>
+    <form v-if="filtersOpen" class="jira-navigator__filters" @submit.prevent="applyFilters">
       <div class="field-stack">
         <label for="from">Desde</label>
         <input id="from" type="date" v-model="filters.from" />
@@ -33,125 +40,128 @@
         </select>
       </div>
       <div class="actions-row">
-        <button class="btn btn-primary btn--sm" type="submit">Buscar</button>
         <button class="btn btn-ghost btn--sm" type="button" @click="clearFilters">Limpiar</button>
       </div>
     </form>
 
-    <div class="jira-tabs" role="tablist">
-      <button
-        v-for="tab in tabs"
-        :key="tab.key"
-        class="jira-tab"
-        :class="{ active: activeTab === tab.key }"
-        type="button"
-        @click="activeTab = tab.key"
-      >
-        {{ tab.label }} <span class="badge">{{ tabTotals[tab.key] || 0 }}</span>
-      </button>
-    </div>
+    <div class="jira-navigator__body">
+      <div class="jira-tabs" role="tablist">
+        <button
+          v-for="tab in tabs"
+          :key="tab.key"
+          class="jira-tab"
+          :class="{ active: activeTab === tab.key }"
+          type="button"
+          role="tab"
+          :aria-selected="activeTab === tab.key"
+          @click="activeTab = tab.key"
+        >
+          {{ tab.label }} <span class="badge">{{ tabTotals[tab.key] || 0 }}</span>
+        </button>
+      </div>
 
-    <div class="table-wrap table-wrap--jira">
-      <table>
-        <thead>
-          <tr>
-            <th>Clave</th>
-            <th>
-              <button type="button" class="datatable__sort-btn" :class="{ 'datatable__sort-btn--active': sortBy === 'title' }" @click="toggleSort('title')">
-                <span>Resumen</span>
-                <span class="datatable__sort-indicator">{{ sortIndicator('title') }}</span>
-              </button>
-            </th>
-            <th>Estado</th>
-            <th>
-              <button type="button" class="datatable__sort-btn" :class="{ 'datatable__sort-btn--active': sortBy === 'priority' }" @click="toggleSort('priority')">
-                <span>Prioridad</span>
-                <span class="datatable__sort-indicator">{{ sortIndicator('priority') }}</span>
-              </button>
-            </th>
-            <th>
-              <button type="button" class="datatable__sort-btn" :class="{ 'datatable__sort-btn--active': sortBy === 'assignee' }" @click="toggleSort('assignee')">
-                <span>Asignado</span>
-                <span class="datatable__sort-indicator">{{ sortIndicator('assignee') }}</span>
-              </button>
-            </th>
-            <th>
-              <button type="button" class="datatable__sort-btn" :class="{ 'datatable__sort-btn--active': sortBy === 'updatedAt' }" @click="toggleSort('updatedAt')">
-                <span>Actualizado</span>
-                <span class="datatable__sort-indicator">{{ sortIndicator('updatedAt') }}</span>
-              </button>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="loading">
-            <td colspan="6">
-              <div class="skeleton-stack skeleton-rows">
-                <div v-for="n in 6" :key="n" class="skeleton-line skeleton-line--lg skeleton-line--w90"></div>
-              </div>
-            </td>
-          </tr>
-          <tr v-else-if="visibleRows.length === 0">
-            <td colspan="6"><div class="empty-state">No hay tickets para esta vista.</div></td>
-          </tr>
-          <tr v-for="ticket in visibleRows" :key="ticket.id">
-            <td>
-              <IssueKeyLink :ticket="ticket" :to="{ path: `/tickets/${ticket.id}`, query: currentListQuery }" />
-            </td>
-            <td>
-              <RouterLink class="table-summary-link" :to="{ path: `/tickets/${ticket.id}`, query: currentListQuery }">
-                {{ ticket.title }}
-              </RouterLink>
-            </td>
-            <td>
-              <StatusLozenge v-if="ticket.status?.name" :label="ticket.status.name" :code="ticket.status.code" />
-            </td>
-            <td>
-              <StatusLozenge
-                v-if="ticket.priority?.name"
-                :label="ticket.priority.name"
-                :code="ticket.priority.code"
-                kind="priority"
-              />
-            </td>
-            <td>
-              <span v-if="ticket.assignee" style="display:inline-flex;align-items:center;gap:0.35rem">
-                <UserAvatar :name="ticket.assignee.fullName" :email="ticket.assignee.email" />
-                {{ ticket.assignee.fullName || ticket.assignee.email }}
-              </span>
-              <span v-else class="meta">Sin asignar</span>
-            </td>
-            <td class="meta">{{ fmtDate(ticket.updatedAt) }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+      <div class="table-wrap table-wrap--jira">
+        <table>
+          <thead>
+            <tr>
+              <th>Clave</th>
+              <th>
+                <button type="button" class="datatable__sort-btn" :class="{ 'datatable__sort-btn--active': sortBy === 'title' }" @click="toggleSort('title')">
+                  <span>Resumen</span>
+                  <span class="datatable__sort-indicator">{{ sortIndicator('title') }}</span>
+                </button>
+              </th>
+              <th>Estado</th>
+              <th>
+                <button type="button" class="datatable__sort-btn" :class="{ 'datatable__sort-btn--active': sortBy === 'priority' }" @click="toggleSort('priority')">
+                  <span>Prioridad</span>
+                  <span class="datatable__sort-indicator">{{ sortIndicator('priority') }}</span>
+                </button>
+              </th>
+              <th>
+                <button type="button" class="datatable__sort-btn" :class="{ 'datatable__sort-btn--active': sortBy === 'assignee' }" @click="toggleSort('assignee')">
+                  <span>Asignado</span>
+                  <span class="datatable__sort-indicator">{{ sortIndicator('assignee') }}</span>
+                </button>
+              </th>
+              <th>
+                <button type="button" class="datatable__sort-btn" :class="{ 'datatable__sort-btn--active': sortBy === 'updatedAt' }" @click="toggleSort('updatedAt')">
+                  <span>Actualizado</span>
+                  <span class="datatable__sort-indicator">{{ sortIndicator('updatedAt') }}</span>
+                </button>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="loading">
+              <td colspan="6">
+                <div class="skeleton-stack skeleton-rows">
+                  <div v-for="n in 6" :key="n" class="skeleton-line skeleton-line--lg skeleton-line--w90"></div>
+                </div>
+              </td>
+            </tr>
+            <tr v-else-if="visibleRows.length === 0">
+              <td colspan="6"><div class="empty-state">No hay tickets para esta vista.</div></td>
+            </tr>
+            <tr v-for="ticket in visibleRows" :key="ticket.id" class="jira-navigator__row">
+              <td>
+                <IssueKeyLink :ticket="ticket" :to="{ path: `/tickets/${ticket.id}`, query: currentListQuery }" />
+              </td>
+              <td>
+                <RouterLink class="table-summary-link" :to="{ path: `/tickets/${ticket.id}`, query: currentListQuery }">
+                  {{ ticket.title }}
+                </RouterLink>
+              </td>
+              <td>
+                <StatusLozenge v-if="ticket.status?.name" :label="ticket.status.name" :code="ticket.status.code" />
+              </td>
+              <td>
+                <StatusLozenge
+                  v-if="ticket.priority?.name"
+                  :label="ticket.priority.name"
+                  :code="ticket.priority.code"
+                  kind="priority"
+                />
+              </td>
+              <td>
+                <span v-if="ticket.assignee" class="jira-navigator__assignee">
+                  <UserAvatar :name="ticket.assignee.fullName" :email="ticket.assignee.email" />
+                  {{ ticket.assignee.fullName || ticket.assignee.email }}
+                </span>
+                <span v-else class="meta">Sin asignar</span>
+              </td>
+              <td class="meta">{{ fmtDate(ticket.updatedAt) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-    <div class="table-footer" aria-label="Paginación de tickets">
-      <div class="table-footer__meta">{{ paginationMeta }}</div>
-      <div class="table-footer__controls">
-        <label class="meta" style="display:flex;gap:0.6rem;align-items:center;margin:0">
-          Mostrar
-          <select v-model.number="limit" @change="handleLimitChange" style="width: 92px">
-            <option :value="10">10</option>
-            <option :value="25">25</option>
-            <option :value="50">50</option>
-          </select>
-        </label>
-        <button class="btn btn-ghost pagination-btn" type="button" :disabled="page === 1" @click="prevPage">Anterior</button>
-        <div class="pagination-pages">
-          <button
-            v-for="p in pageButtons"
-            :key="p"
-            type="button"
-            class="btn btn-ghost pagination-page-btn"
-            :class="{ 'pagination-page-btn--active': p === page }"
-            @click="goToPage(p)"
-          >
-            {{ p }}
-          </button>
+      <div class="table-footer jira-navigator__footer" aria-label="Paginación de tickets">
+        <div class="table-footer__meta">{{ paginationMeta }}</div>
+        <div class="table-footer__controls">
+          <label class="meta jira-navigator__page-size">
+            Mostrar
+            <select v-model.number="limit" @change="handleLimitChange">
+              <option :value="10">10</option>
+              <option :value="25">25</option>
+              <option :value="50">50</option>
+            </select>
+          </label>
+          <button class="btn btn-ghost pagination-btn" type="button" :disabled="page === 1" @click="prevPage">Anterior</button>
+          <div class="pagination-pages">
+            <button
+              v-for="p in pageButtons"
+              :key="p"
+              type="button"
+              class="btn btn-ghost pagination-page-btn"
+              :class="{ 'pagination-page-btn--active': p === page }"
+              @click="goToPage(p)"
+            >
+              {{ p }}
+            </button>
+          </div>
+          <button class="btn btn-ghost pagination-btn" type="button" :disabled="page >= totalPages" @click="nextPage">Siguiente</button>
         </div>
-        <button class="btn btn-ghost pagination-btn" type="button" :disabled="page >= totalPages" @click="nextPage">Siguiente</button>
       </div>
     </div>
   </section>
@@ -176,6 +186,7 @@ const router = useRouter();
 const { fetchCatalogBundle } = useCatalogs();
 
 const loading = ref(false);
+const filtersOpen = ref(false);
 const query = ref('');
 const filters = reactive({ from: '', to: '', productId: '' });
 const rows = ref([]);
@@ -194,6 +205,14 @@ const tabs = [
   { key: 'unassigned', label: 'Sin asignar' },
   { key: 'closed', label: 'Cerrados' },
 ];
+
+const pageTitle = computed(() => {
+  const view = String(route.query.view || activeTab.value || 'all');
+  if (view === 'mine') return 'Asignados a mí';
+  if (view === 'unassigned') return 'Sin asignar';
+  if (view === 'closed') return 'Cerrados';
+  return 'Todos los tickets';
+});
 
 const visibleRows = computed(() => rows.value);
 const currentListQuery = computed(() => ({
@@ -229,6 +248,7 @@ function hydrateFromRouteQuery() {
   sortBy.value = allowedSortBy.includes(incomingSortBy) ? incomingSortBy : 'updatedAt';
   const incomingSortDir = String(route.query.sortDir || 'desc').trim().toLowerCase();
   sortDir.value = incomingSortDir === 'asc' ? 'asc' : 'desc';
+  filtersOpen.value = Boolean(filters.from || filters.to || filters.productId);
 }
 
 async function replaceQueryFromState() {
@@ -283,6 +303,7 @@ function clearFilters() {
   sortDir.value = 'desc';
   activeTab.value = 'all';
   page.value = 1;
+  filtersOpen.value = false;
   loadTickets({ syncRoute: true, refreshTotals: true });
 }
 
