@@ -23,7 +23,7 @@
       ref="editorRef"
       class="rich-editor"
       :contenteditable="disabled ? 'false' : 'true'"
-      :data-placeholder="placeholder"
+      :data-placeholder="placeholder || 'Escribe aquí…'"
       @input="onInput"
       @blur="onInput"
     ></div>

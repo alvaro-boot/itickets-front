@@ -1,11 +1,14 @@
 <template>
-  <div class="app-shell shell-frame">
+  <div class="app-shell shell-frame app-shell--desk">
     <header class="topbar topbar--dense">
       <div class="topbar-brand-block">
-        <RouterLink to="/tickets" class="brand brand--shell" aria-label="IT-Sistemas — inicio">
-          <img src="/images/icono.png" alt="" class="brand-icon brand-icon--topbar" width="36" height="36" decoding="async" />
+        <RouterLink to="/tickets" class="brand brand--shell" aria-label="IT Service Desk — inicio">
+          <img src="/images/icono.png" alt="" class="brand-icon brand-icon--topbar" width="32" height="32" decoding="async" />
         </RouterLink>
-        <strong class="topbar-brand-title">Operations Desk</strong>
+        <div class="topbar-brand-copy">
+          <strong class="topbar-brand-title">Service Desk</strong>
+          <span class="topbar-brand-sub">Gestión de tickets e incidentes</span>
+        </div>
       </div>
       <button class="menu-toggle" type="button" aria-label="Abrir menú" @click="toggleSidebar">☰</button>
       <nav class="nav-actions nav-actions--dense" aria-label="Principal">
@@ -29,8 +32,9 @@
     <div class="layout shell-layout">
       <aside class="sidebar sidebar--dense" :hidden="false">
         <RouterLink to="/tickets" class="sidebar-brand sidebar-brand--dense" aria-label="Inicio" @click="closeSidebar">
-          <img src="/images/icono.png" alt="" class="brand-icon brand-icon--sidebar" width="36" height="36" decoding="async" />
+          <img src="/images/icono.png" alt="" class="brand-icon brand-icon--sidebar" width="32" height="32" decoding="async" />
         </RouterLink>
+        <h2>Menú</h2>
         <nav class="menu menu--dense" aria-label="Secciones">
           <RouterLink
             v-for="item in visibleItems"
@@ -39,6 +43,7 @@
             :class="{ active: route.path === item.to || route.path.startsWith(`${item.to}/`) }"
             @click="closeSidebar"
           >
+            <span class="nav-icon" aria-hidden="true">{{ item.icon }}</span>
             <span>{{ item.label }}</span>
           </RouterLink>
         </nav>
@@ -75,14 +80,14 @@ const route = useRoute();
 const router = useRouter();
 
 const navigation = [
-  { to: '/tickets', label: 'Tickets', key: 'tickets' },
-  { to: '/tickets/new', label: 'Nuevo ticket', key: 'ticket-new' },
-  { to: '/incidents', label: 'Incidentes', key: 'incidents' },
-  { to: '/tasks', label: 'Mis tareas', key: 'tasks' },
-  { to: '/profile', label: 'Mi perfil', key: 'profile' },
-  { to: '/catalogs', label: 'Catalogos', key: 'catalogs' },
-  { to: '/admin', label: 'Admin Global', key: 'admin' },
-  { to: '/reports', label: 'Reportes', key: 'reports' },
+  { to: '/tickets', label: 'Tickets', key: 'tickets', icon: 'TK' },
+  { to: '/tickets/new', label: 'Nuevo ticket', key: 'ticket-new', icon: '+' },
+  { to: '/incidents', label: 'Incidentes', key: 'incidents', icon: 'IN' },
+  { to: '/tasks', label: 'Mis tareas', key: 'tasks', icon: '✓' },
+  { to: '/profile', label: 'Mi perfil', key: 'profile', icon: 'PF' },
+  { to: '/catalogs', label: 'Catálogos', key: 'catalogs', icon: 'CT' },
+  { to: '/admin', label: 'Administración', key: 'admin', icon: 'AD' },
+  { to: '/reports', label: 'Reportes', key: 'reports', icon: 'RP' },
 ];
 
 const visibleItems = computed(() => {
