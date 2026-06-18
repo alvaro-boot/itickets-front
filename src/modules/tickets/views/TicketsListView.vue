@@ -1,51 +1,7 @@
 <template>
-  <section class="jira-page jira-navigator">
-    <header class="jira-navigator__header">
-      <div class="jira-navigator__title-row">
-        <h1 class="jira-navigator__title">{{ pageTitle }}</h1>
-        <span class="jira-navigator__count">{{ total }} tickets</span>
-      </div>
-      <form class="jira-navigator__toolbar" @submit.prevent="applyFilters">
-        <div class="jira-navigator__search">
-          <input
-            id="ticket-search"
-            v-model.trim="query"
-            type="search"
-            placeholder="Buscar por título o COOT-123"
-            aria-label="Buscar tickets"
-            @keyup.enter="applyFilters"
-          />
-        </div>
-        <button type="button" class="btn btn-ghost btn--sm" :aria-expanded="filtersOpen" @click="filtersOpen = !filtersOpen">
-          {{ filtersOpen ? 'Ocultar filtros' : 'Más filtros' }}
-        </button>
-        <button class="btn btn-primary btn--sm" type="submit">Buscar</button>
-      </form>
-    </header>
-
-    <form v-if="filtersOpen" class="jira-navigator__filters" @submit.prevent="applyFilters">
-      <div class="field-stack">
-        <label for="from">Desde</label>
-        <input id="from" type="date" v-model="filters.from" />
-      </div>
-      <div class="field-stack">
-        <label for="to">Hasta</label>
-        <input id="to" type="date" v-model="filters.to" />
-      </div>
-      <div class="field-stack">
-        <label for="productId">Producto</label>
-        <select id="productId" v-model="filters.productId">
-          <option value="">Todos</option>
-          <option v-for="product in products" :key="product.id" :value="product.id">{{ product.name }}</option>
-        </select>
-      </div>
-      <div class="actions-row">
-        <button class="btn btn-ghost btn--sm" type="button" @click="clearFilters">Limpiar</button>
-      </div>
-    </form>
-
-    <div class="jira-navigator__body">
-      <div class="jira-tabs" role="tablist">
+  <section class="page page--tickets">
+    <div class="page__toolbar">
+      <div class="jira-tabs jira-tabs--flat" role="tablist">
         <button
           v-for="tab in tabs"
           :key="tab.key"
@@ -56,114 +12,133 @@
           :aria-selected="activeTab === tab.key"
           @click="activeTab = tab.key"
         >
-          {{ tab.label }} <span class="badge">{{ tabTotals[tab.key] || 0 }}</span>
+          {{ tab.label }}
+          <span class="badge">{{ tabTotals[tab.key] || 0 }}</span>
         </button>
       </div>
 
-      <div class="table-wrap table-wrap--jira">
-        <table>
-          <thead>
-            <tr>
-              <th>Clave</th>
-              <th>
-                <button type="button" class="datatable__sort-btn" :class="{ 'datatable__sort-btn--active': sortBy === 'title' }" @click="toggleSort('title')">
-                  <span>Resumen</span>
-                  <span class="datatable__sort-indicator">{{ sortIndicator('title') }}</span>
-                </button>
-              </th>
-              <th>Estado</th>
-              <th>
-                <button type="button" class="datatable__sort-btn" :class="{ 'datatable__sort-btn--active': sortBy === 'priority' }" @click="toggleSort('priority')">
-                  <span>Prioridad</span>
-                  <span class="datatable__sort-indicator">{{ sortIndicator('priority') }}</span>
-                </button>
-              </th>
-              <th>
-                <button type="button" class="datatable__sort-btn" :class="{ 'datatable__sort-btn--active': sortBy === 'assignee' }" @click="toggleSort('assignee')">
-                  <span>Asignado</span>
-                  <span class="datatable__sort-indicator">{{ sortIndicator('assignee') }}</span>
-                </button>
-              </th>
-              <th>
-                <button type="button" class="datatable__sort-btn" :class="{ 'datatable__sort-btn--active': sortBy === 'updatedAt' }" @click="toggleSort('updatedAt')">
-                  <span>Actualizado</span>
-                  <span class="datatable__sort-indicator">{{ sortIndicator('updatedAt') }}</span>
-                </button>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="loading">
-              <td colspan="6">
-                <div class="skeleton-stack skeleton-rows">
-                  <div v-for="n in 6" :key="n" class="skeleton-line skeleton-line--lg skeleton-line--w90"></div>
-                </div>
-              </td>
-            </tr>
-            <tr v-else-if="visibleRows.length === 0">
-              <td colspan="6"><div class="empty-state">No hay tickets para esta vista.</div></td>
-            </tr>
-            <tr v-for="ticket in visibleRows" :key="ticket.id" class="jira-navigator__row">
-              <td>
-                <IssueKeyLink :ticket="ticket" :to="{ path: `/tickets/${ticket.id}`, query: currentListQuery }" />
-              </td>
-              <td>
-                <RouterLink class="table-summary-link" :to="{ path: `/tickets/${ticket.id}`, query: currentListQuery }">
-                  {{ ticket.title }}
-                </RouterLink>
-              </td>
-              <td>
-                <StatusLozenge v-if="ticket.status?.name" :label="ticket.status.name" :code="ticket.status.code" />
-              </td>
-              <td>
-                <StatusLozenge
-                  v-if="ticket.priority?.name"
-                  :label="ticket.priority.name"
-                  :code="ticket.priority.code"
-                  kind="priority"
-                />
-              </td>
-              <td>
-                <span v-if="ticket.assignee" class="jira-navigator__assignee">
-                  <UserAvatar :name="ticket.assignee.fullName" :email="ticket.assignee.email" />
-                  {{ ticket.assignee.fullName || ticket.assignee.email }}
-                </span>
-                <span v-else class="meta">Sin asignar</span>
-              </td>
-              <td class="meta">{{ fmtDate(ticket.updatedAt) }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="table-footer jira-navigator__footer" aria-label="Paginación de tickets">
-        <div class="table-footer__meta">{{ paginationMeta }}</div>
-        <div class="table-footer__controls">
-          <label class="meta jira-navigator__page-size">
-            Mostrar
-            <select v-model.number="limit" @change="handleLimitChange">
-              <option :value="10">10</option>
-              <option :value="25">25</option>
-              <option :value="50">50</option>
-            </select>
-          </label>
-          <button class="btn btn-ghost pagination-btn" type="button" :disabled="page === 1" @click="prevPage">Anterior</button>
-          <div class="pagination-pages">
-            <button
-              v-for="p in pageButtons"
-              :key="p"
-              type="button"
-              class="btn btn-ghost pagination-page-btn"
-              :class="{ 'pagination-page-btn--active': p === page }"
-              @click="goToPage(p)"
-            >
-              {{ p }}
-            </button>
-          </div>
-          <button class="btn btn-ghost pagination-btn" type="button" :disabled="page >= totalPages" @click="nextPage">Siguiente</button>
-        </div>
+      <div class="page__toolbar-actions">
+        <button
+          type="button"
+          class="btn btn-ghost btn--sm"
+          :class="{ 'btn--active': filtersOpen }"
+          @click="filtersOpen = !filtersOpen"
+        >
+          Filtros
+        </button>
       </div>
     </div>
+
+    <div v-if="activeFilters.length" class="filter-chips">
+      <span v-for="chip in activeFilters" :key="chip.key" class="filter-chip">
+        {{ chip.label }}
+        <button type="button" aria-label="Quitar filtro" @click="chip.clear()">×</button>
+      </span>
+      <button type="button" class="filter-chip filter-chip--clear" @click="clearFilters">Limpiar todo</button>
+    </div>
+
+    <form v-if="filtersOpen" class="filter-panel" @submit.prevent="applyFilters">
+      <div class="field-stack">
+        <label for="from">Desde</label>
+        <input id="from" type="date" v-model="filters.from" @change="applyFilters" />
+      </div>
+      <div class="field-stack">
+        <label for="to">Hasta</label>
+        <input id="to" type="date" v-model="filters.to" @change="applyFilters" />
+      </div>
+      <div class="field-stack">
+        <label for="productId">Producto</label>
+        <select id="productId" v-model="filters.productId" @change="applyFilters">
+          <option value="">Todos</option>
+          <option v-for="product in products" :key="product.id" :value="product.id">{{ product.name }}</option>
+        </select>
+      </div>
+    </form>
+
+    <div class="table-wrap table-wrap--flat">
+      <table>
+        <thead>
+          <tr>
+            <th>Clave</th>
+            <th>
+              <button type="button" class="datatable__sort-btn" :class="{ 'datatable__sort-btn--active': sortBy === 'title' }" @click="toggleSort('title')">
+                <span>Resumen</span>
+                <span class="datatable__sort-indicator">{{ sortIndicator('title') }}</span>
+              </button>
+            </th>
+            <th>Estado</th>
+            <th>
+              <button type="button" class="datatable__sort-btn" :class="{ 'datatable__sort-btn--active': sortBy === 'priority' }" @click="toggleSort('priority')">
+                <span>Prioridad</span>
+                <span class="datatable__sort-indicator">{{ sortIndicator('priority') }}</span>
+              </button>
+            </th>
+            <th class="hide-mobile">Asignado</th>
+            <th class="hide-mobile">
+              <button type="button" class="datatable__sort-btn" :class="{ 'datatable__sort-btn--active': sortBy === 'updatedAt' }" @click="toggleSort('updatedAt')">
+                <span>Actualizado</span>
+                <span class="datatable__sort-indicator">{{ sortIndicator('updatedAt') }}</span>
+              </button>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-if="loading">
+            <td colspan="6">
+              <div class="skeleton-stack skeleton-rows">
+                <div v-for="n in 5" :key="n" class="skeleton-line skeleton-line--lg skeleton-line--w90"></div>
+              </div>
+            </td>
+          </tr>
+          <tr v-else-if="visibleRows.length === 0">
+            <td colspan="6"><div class="empty-state">No hay tickets en esta vista.</div></td>
+          </tr>
+          <tr v-for="ticket in visibleRows" :key="ticket.id" class="table-row-clickable">
+            <td>
+              <IssueKeyLink :ticket="ticket" :to="{ path: `/tickets/${ticket.id}`, query: currentListQuery }" />
+            </td>
+            <td>
+              <RouterLink class="table-summary-link" :to="{ path: `/tickets/${ticket.id}`, query: currentListQuery }">
+                {{ ticket.title }}
+              </RouterLink>
+            </td>
+            <td>
+              <StatusLozenge v-if="ticket.status?.name" :label="ticket.status.name" :code="ticket.status.code" />
+            </td>
+            <td>
+              <StatusLozenge
+                v-if="ticket.priority?.name"
+                :label="ticket.priority.name"
+                :code="ticket.priority.code"
+                kind="priority"
+              />
+            </td>
+            <td class="hide-mobile">
+              <span v-if="ticket.assignee" class="assignee-cell">
+                <UserAvatar :name="ticket.assignee.fullName" :email="ticket.assignee.email" />
+                {{ ticket.assignee.fullName || ticket.assignee.email }}
+              </span>
+              <span v-else class="meta">—</span>
+            </td>
+            <td class="meta hide-mobile">{{ fmtDate(ticket.updatedAt) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="table-footer table-footer--flat" aria-label="Paginación">
+      <span class="table-footer__meta">{{ paginationMeta }}</span>
+      <div class="table-footer__controls">
+        <select v-model.number="limit" class="page-size-select" @change="handleLimitChange">
+          <option :value="10">10</option>
+          <option :value="25">25</option>
+          <option :value="50">50</option>
+        </select>
+        <button class="btn btn-ghost btn--sm" type="button" :disabled="page === 1" @click="prevPage">←</button>
+        <span class="pagination-label">{{ page }} / {{ totalPages }}</span>
+        <button class="btn btn-ghost btn--sm" type="button" :disabled="page >= totalPages" @click="nextPage">→</button>
+      </div>
+    </footer>
   </section>
 </template>
 
@@ -201,20 +176,13 @@ const tabTotals = ref({ all: 0, mine: 0, unassigned: 0, closed: 0 });
 
 const tabs = [
   { key: 'all', label: 'Todos' },
-  { key: 'mine', label: 'Mis asignados' },
+  { key: 'mine', label: 'Míos' },
   { key: 'unassigned', label: 'Sin asignar' },
   { key: 'closed', label: 'Cerrados' },
 ];
 
-const pageTitle = computed(() => {
-  const view = String(route.query.view || activeTab.value || 'all');
-  if (view === 'mine') return 'Asignados a mí';
-  if (view === 'unassigned') return 'Sin asignar';
-  if (view === 'closed') return 'Cerrados';
-  return 'Todos los tickets';
-});
-
 const visibleRows = computed(() => rows.value);
+
 const currentListQuery = computed(() => ({
   q: query.value || undefined,
   from: filters.from || undefined,
@@ -226,6 +194,52 @@ const currentListQuery = computed(() => ({
   page: page.value > 1 ? String(page.value) : undefined,
   limit: limit.value !== 25 ? String(limit.value) : undefined,
 }));
+
+const activeFilters = computed(() => {
+  const chips = [];
+  if (query.value) {
+    chips.push({
+      key: 'q',
+      label: `«${query.value}»`,
+      clear: () => {
+        query.value = '';
+        applyFilters();
+      },
+    });
+  }
+  if (filters.from) {
+    chips.push({
+      key: 'from',
+      label: `Desde ${filters.from}`,
+      clear: () => {
+        filters.from = '';
+        applyFilters();
+      },
+    });
+  }
+  if (filters.to) {
+    chips.push({
+      key: 'to',
+      label: `Hasta ${filters.to}`,
+      clear: () => {
+        filters.to = '';
+        applyFilters();
+      },
+    });
+  }
+  if (filters.productId) {
+    const name = products.value.find((p) => String(p.id) === String(filters.productId))?.name || 'Producto';
+    chips.push({
+      key: 'product',
+      label: name,
+      clear: () => {
+        filters.productId = '';
+        applyFilters();
+      },
+    });
+  }
+  return chips;
+});
 
 function parsePositiveInt(value, fallback) {
   const parsed = Number(value);
@@ -331,22 +345,7 @@ function handleLimitChange() {
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / limit.value)));
 const startIndex = computed(() => (total.value === 0 ? 0 : (page.value - 1) * limit.value + 1));
 const endIndex = computed(() => Math.min(page.value * limit.value, total.value));
-const paginationMeta = computed(() => `Mostrando ${startIndex.value}-${endIndex.value} de ${total.value} tickets`);
-
-const pageButtons = computed(() => {
-  const pages = totalPages.value;
-  const cur = page.value;
-  const start = Math.max(1, cur - 2);
-  const end = Math.min(pages, cur + 2);
-  const arr = [];
-  for (let i = start; i <= end; i += 1) arr.push(i);
-  return arr;
-});
-
-function goToPage(p) {
-  page.value = p;
-  loadTickets({ syncRoute: true });
-}
+const paginationMeta = computed(() => `${startIndex.value}–${endIndex.value} de ${total.value}`);
 
 function prevPage() {
   if (page.value <= 1) return;
@@ -375,4 +374,15 @@ watch(activeTab, () => {
   page.value = 1;
   loadTickets({ syncRoute: true });
 });
+
+watch(
+  () => route.query.q,
+  (newQ) => {
+    const next = String(newQ || '').trim();
+    if (next === query.value) return;
+    query.value = next;
+    page.value = 1;
+    loadTickets({ syncRoute: false, refreshTotals: true });
+  },
+);
 </script>

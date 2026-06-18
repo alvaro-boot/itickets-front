@@ -1,8 +1,8 @@
 <template>
-  <section class="jira-page stack stack--compact">
-    <header class="jira-page-header">
+  <section class="page">
+    <header class="page__header">
       <h1>Incidentes</h1>
-      <p class="jira-page-header__sub">Total {{ total }} · Abiertos {{ openCount }} · Resueltos {{ resolvedCount }}</p>
+      <p class="page__subtitle">Total {{ total }} · Abiertos {{ openCount }} · Resueltos {{ resolvedCount }}</p>
     </header>
 
     <div class="jira-collapsible">

@@ -20,7 +20,7 @@
           class="btn btn-primary btn--sm jira-create-btn"
           @click="openCreateIssue"
         >
-          Crear
+          Crear ticket
         </button>
         <select
           v-if="(auth.state.profile?.companies?.length || 0) > 1"
@@ -33,21 +33,25 @@
             {{ company.name }}
           </option>
         </select>
-        <UserAvatar :name="auth.state.profile?.fullName" :email="auth.state.profile?.email" size="md" />
-        <span class="topbar-user">{{ auth.state.profile?.fullName || 'Sesión' }}</span>
-        <button type="button" class="btn btn-ghost btn--sm" @click="handleLogout">Salir</button>
+        <div class="user-menu" ref="userMenuRef">
+          <button type="button" class="user-menu__trigger" aria-label="Menú de usuario" @click="userMenuOpen = !userMenuOpen">
+            <UserAvatar :name="auth.state.profile?.fullName" :email="auth.state.profile?.email" size="md" />
+          </button>
+          <div v-if="userMenuOpen" class="user-menu__dropdown">
+            <p class="user-menu__name">{{ auth.state.profile?.fullName || 'Usuario' }}</p>
+            <p v-if="auth.state.profile?.email" class="user-menu__email">{{ auth.state.profile.email }}</p>
+            <RouterLink to="/profile" class="user-menu__item" @click="userMenuOpen = false">Mi perfil</RouterLink>
+            <button type="button" class="user-menu__item user-menu__item--danger" @click="handleLogout">Cerrar sesión</button>
+          </div>
+        </div>
       </nav>
     </header>
 
     <div class="layout shell-layout">
       <aside class="sidebar sidebar--dense sidebar--jira" :hidden="false">
-        <RouterLink to="/tickets" class="sidebar-brand sidebar-brand--dense" aria-label="Inicio" @click="closeSidebar">
-          <img src="/images/icono.png" alt="" class="brand-icon brand-icon--sidebar" width="28" height="28" decoding="async" />
-        </RouterLink>
-
-        <div v-for="section in visibleSections" :key="section.label" class="sidebar-section">
-          <p class="sidebar-section__label">{{ section.label }}</p>
-          <nav class="menu menu--dense menu--jira" :aria-label="section.label">
+        <nav v-for="section in visibleSections" :key="section.label" class="sidebar-section" :aria-label="section.label">
+          <p v-if="section.label" class="sidebar-section__label">{{ section.label }}</p>
+          <div class="menu menu--dense menu--jira">
             <RouterLink
               v-for="item in section.items"
               :key="item.to"
@@ -58,12 +62,11 @@
               <span class="nav-icon" aria-hidden="true" v-html="item.icon"></span>
               <span>{{ item.label }}</span>
             </RouterLink>
-          </nav>
-        </div>
+          </div>
+        </nav>
       </aside>
 
       <main class="content content-shell content-shell--dense content-shell--jira">
-        <PageBreadcrumbs :current-label="breadcrumbCurrent" />
         <section class="content-scroll">
           <RouterView v-slot="{ Component, route: childRoute }">
             <KeepAlive :include="['tickets']">
@@ -82,12 +85,11 @@
 </template>
 
 <script setup>
-import { computed, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
 import ToastHost from '../../shared/components/ToastHost.vue';
 import GlobalLoader from '../../shared/components/GlobalLoader.vue';
 import GlobalSearch from '../../shared/components/GlobalSearch.vue';
-import PageBreadcrumbs from '../../shared/components/PageBreadcrumbs.vue';
 import UserAvatar from '../../shared/components/UserAvatar.vue';
 import { useAuth } from '../../shared/composables/useAuth';
 import { useUi } from '../../shared/composables/useUi';
@@ -99,8 +101,11 @@ const auth = useAuth();
 const ui = useUi();
 const route = useRoute();
 const router = useRouter();
-const { breadcrumbCurrent, clearBreadcrumbCurrent } = usePageChrome();
+const { clearBreadcrumbCurrent } = usePageChrome();
 const { createIssueOpen, openCreateIssue, closeCreateIssue } = useCreateIssue();
+
+const userMenuOpen = ref(false);
+const userMenuRef = ref(null);
 
 const iconList = '<svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>';
 const iconIncident = '<svg viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>';
@@ -108,19 +113,11 @@ const iconTask = '<svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0
 const iconCatalog = '<svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>';
 const iconAdmin = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>';
 const iconReport = '<svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>';
-const iconProfile = '<svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
 
 const sections = [
   {
-    label: 'Para ti',
-    items: [
-      { to: '/tickets?view=mine', label: 'Asignados a mí', key: 'tickets-mine', icon: iconTask, view: 'mine' },
-      { to: '/tickets?view=unassigned', label: 'Sin asignar', key: 'tickets-unassigned', icon: iconIncident, view: 'unassigned' },
-    ],
-  },
-  {
-    label: 'Proyecto',
-    items: [{ to: '/tickets', label: 'Todos los tickets', key: 'tickets', icon: iconList, view: 'all' }],
+    label: '',
+    items: [{ to: '/tickets', label: 'Tickets', key: 'tickets', icon: iconList }],
   },
   {
     label: 'Operaciones',
@@ -137,16 +134,12 @@ const sections = [
       { to: '/reports', label: 'Reportes', key: 'reports', icon: iconReport },
     ],
   },
-  {
-    label: 'Cuenta',
-    items: [{ to: '/profile', label: 'Mi perfil', key: 'profile', icon: iconProfile }],
-  },
 ];
 
 function canSeeItem(item) {
   const profile = auth.state.profile;
   if (!profile) return true;
-  if (item.key?.startsWith('tickets')) return profile.enabledModules?.includes('tickets');
+  if (item.key === 'tickets') return profile.enabledModules?.includes('tickets');
   if (item.key === 'admin') return profile.permissions?.includes('companies.manage');
   if (item.key === 'incidents') return profile.enabledModules?.includes('incidents');
   if (item.key === 'tasks') return profile.enabledModules?.includes('tasks');
@@ -170,13 +163,7 @@ const canCreateTicket = computed(() => auth.state.profile?.enabledModules?.inclu
 const canSearchTickets = computed(() => auth.state.profile?.enabledModules?.includes('tickets'));
 
 function isActive(item) {
-  if (item.key?.startsWith('tickets')) {
-    if (item.view && item.view !== 'all') {
-      return route.path === '/tickets' && route.query.view === item.view;
-    }
-    return route.path === '/tickets' && (!route.query.view || route.query.view === 'all');
-  }
-  if (item.to === '/tickets') {
+  if (item.key === 'tickets') {
     return route.path === '/tickets' || (route.path.startsWith('/tickets/') && !route.path.endsWith('/new'));
   }
   return route.path === item.to || route.path.startsWith(`${item.to}/`);
@@ -193,6 +180,12 @@ function toggleSidebar() {
   document.body.classList.toggle('sidebar-open', nextValue);
 }
 
+function onDocumentClick(event) {
+  if (!userMenuRef.value?.contains(event.target)) {
+    userMenuOpen.value = false;
+  }
+}
+
 async function handleSwitchCompany(event) {
   const companyId = String(event.target?.value || '');
   const currentCompanyId = auth.state.profile?.activeCompanyId || auth.state.profile?.companyId || '';
@@ -206,14 +199,19 @@ async function handleSwitchCompany(event) {
 }
 
 function handleLogout() {
+  userMenuOpen.value = false;
   auth.logout();
   router.push('/login');
 }
+
+onMounted(() => document.addEventListener('click', onDocumentClick));
+onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick));
 
 watch(
   () => route.fullPath,
   () => {
     closeSidebar();
+    userMenuOpen.value = false;
     clearBreadcrumbCurrent();
   },
 );

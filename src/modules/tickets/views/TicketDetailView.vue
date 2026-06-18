@@ -1,6 +1,6 @@
 <template>
-  <section class="jira-page jira-issue-view">
-    <div v-if="loading" class="jira-issue-view__loading"><p class="meta">Cargando ticket...</p></div>
+  <section class="page page--issue">
+    <div v-if="loading" class="page__loading"><p class="meta">Cargando ticket...</p></div>
 
     <template v-else-if="ticket">
       <div v-if="isBusy" class="ticket-loading-hint" role="status" aria-live="polite">
@@ -8,41 +8,45 @@
         <span>{{ busyMessage }}</span>
       </div>
 
-      <div class="jira-issue-view__layout">
-        <div class="jira-issue-view__main">
-          <header class="jira-issue-view__header">
-            <div class="jira-issue-view__type-row">
-              <span class="jira-issue-view__type-icon" aria-hidden="true">◆</span>
+      <div class="issue-layout">
+        <div class="issue-main">
+          <header class="issue-header">
+            <RouterLink class="issue-header__back" :to="backToList">← Tickets</RouterLink>
+            <div class="issue-header__key-row">
               <IssueKeyLink :ticket="ticket" />
-              <RouterLink class="jira-issue-view__back" :to="backToList">← Volver</RouterLink>
+              <StatusLozenge
+                v-if="ticket.status?.name"
+                :label="ticket.status.name"
+                :code="ticket.status.code"
+              />
             </div>
             <input
               id="title"
               v-model.trim="form.title"
-              class="jira-issue-summary-input"
+              class="issue-header__summary"
               required
               minlength="3"
               aria-label="Resumen del ticket"
             />
           </header>
 
-          <section class="jira-issue-view__section">
-            <h2 class="jira-issue-view__section-title">Descripción</h2>
+          <section class="issue-section">
+            <h2 class="issue-section__title">Descripción</h2>
             <RichTextEditor id="description" v-model="form.description" />
           </section>
 
-          <section class="jira-issue-view__section jira-issue-view__activity">
-            <h2 class="jira-issue-view__section-title">Actividad</h2>
-            <form class="jira-issue-view__comment-form" @submit.prevent="addComment">
+          <section class="issue-section">
+            <h2 class="issue-section__title">Actividad</h2>
+            <form class="issue-comment-form" @submit.prevent="addComment">
               <RichTextEditor
                 id="body"
                 v-model="commentBody"
                 compact
-                placeholder="Añadir un comentario..."
+                placeholder="Escribe un comentario..."
                 :disabled="isBusy"
               />
-              <div class="jira-issue-view__comment-actions">
-                <input ref="commentFileInput" type="file" :disabled="isBusy" />
+              <div class="issue-comment-form__actions">
+                <input ref="commentFileInput" type="file" :disabled="isBusy" class="input-file--compact" />
                 <button class="btn btn-ghost btn--sm" type="button" :disabled="isBusy" @click="uploadAttachment">Adjuntar</button>
                 <button class="btn btn-primary btn--sm" type="submit" :disabled="isBusy">
                   {{ isCommenting ? 'Publicando...' : 'Comentar' }}
@@ -53,11 +57,11 @@
             <ActivityFeed :items="activityItems" />
 
             <div v-for="comment in ticket.comments || []" :key="`att-${comment.id}`">
-              <div v-if="extractAttachments(comment.body).length" class="jira-issue-view__attachments">
+              <div v-if="extractAttachments(comment.body).length" class="issue-attachments">
                 <article
                   v-for="(attachment, attIdx) in extractAttachments(comment.body)"
                   :key="`${String(comment.id)}-${attIdx}`"
-                  class="jira-issue-view__attachment"
+                  class="issue-attachment"
                 >
                   <template v-if="attachment.isImage">
                     <img
@@ -69,7 +73,7 @@
                   </template>
                   <div class="actions-row">
                     <button type="button" class="btn btn-ghost btn--sm" @click="openStoredAttachment(attachment.storedUrl, 'tab')">Ver</button>
-                    <button type="button" class="btn btn-primary btn--sm" @click="openStoredAttachment(attachment.storedUrl, 'download')">Descargar</button>
+                    <button type="button" class="btn btn-ghost btn--sm" @click="openStoredAttachment(attachment.storedUrl, 'download')">Descargar</button>
                   </div>
                 </article>
               </div>
@@ -77,15 +81,13 @@
           </section>
         </div>
 
-        <aside class="jira-issue-view__sidebar jira-meta-panel">
-          <h2 class="jira-issue-view__sidebar-title">Detalles</h2>
-
+        <aside class="issue-sidebar">
           <JiraFieldRow label="Estado">
             <select id="statusId" v-model="form.statusId" class="jira-field-control">
               <option v-for="status in catalogs.statuses" :key="status.id" :value="status.id">{{ status.name }}</option>
             </select>
           </JiraFieldRow>
-          <JiraFieldRow v-if="selectedStatusIsFinal" label="Fecha de solución">
+          <JiraFieldRow v-if="selectedStatusIsFinal" label="Solución">
             <input id="resolvedAt" v-model="form.resolvedAt" type="date" class="jira-field-control" />
           </JiraFieldRow>
           <JiraFieldRow label="Prioridad">
@@ -121,39 +123,49 @@
           <JiraFieldRow label="Teléfono">
             <input id="requesterPhone" v-model.trim="form.requesterPhone" class="jira-field-control" />
           </JiraFieldRow>
-          <JiraFieldRow label="Creado">
-            <span>{{ fmtDate(ticket.createdAt) }}</span>
-          </JiraFieldRow>
-          <JiraFieldRow label="Actualizado">
-            <span>{{ fmtDate(ticket.updatedAt) }}</span>
-          </JiraFieldRow>
-          <JiraFieldRow label="Tiempo registrado">
-            <span>{{ ticket.totalLoggedMinutes || 0 }} min</span>
-          </JiraFieldRow>
 
-          <template v-if="showWorklogs">
-            <JiraFieldRow label="Registrar tiempo">
-              <input id="worklogAmount" v-model.number="worklog.amount" type="number" min="1" class="jira-field-control" />
-              <select id="worklogUnit" v-model="worklog.unit" class="jira-field-control jira-field-control--spaced">
-                <option value="minutes">Minutos</option>
-                <option value="hours">Horas</option>
-                <option value="days">Días</option>
-              </select>
-              <input id="worklogNote" v-model="worklog.note" placeholder="Nota" class="jira-field-control jira-field-control--spaced" />
+          <button type="button" class="issue-sidebar__more" @click="showMoreFields = !showMoreFields">
+            {{ showMoreFields ? 'Menos información' : 'Más información' }}
+          </button>
+
+          <template v-if="showMoreFields">
+            <JiraFieldRow label="Creado">
+              <span>{{ fmtDate(ticket.createdAt) }}</span>
             </JiraFieldRow>
+            <JiraFieldRow label="Actualizado">
+              <span>{{ fmtDate(ticket.updatedAt) }}</span>
+            </JiraFieldRow>
+            <JiraFieldRow label="Tiempo">
+              <span>{{ ticket.totalLoggedMinutes || 0 }} min</span>
+            </JiraFieldRow>
+            <template v-if="showWorklogs">
+              <JiraFieldRow label="Registrar tiempo">
+                <input id="worklogAmount" v-model.number="worklog.amount" type="number" min="1" class="jira-field-control" />
+                <select id="worklogUnit" v-model="worklog.unit" class="jira-field-control jira-field-control--spaced">
+                  <option value="minutes">Minutos</option>
+                  <option value="hours">Horas</option>
+                  <option value="days">Días</option>
+                </select>
+              </JiraFieldRow>
+            </template>
           </template>
 
-          <JiraFieldRow label="Subtickets">
-            <input id="subticketQuantity" v-model.number="subticketQuantity" type="number" min="1" max="20" class="jira-field-control" />
-          </JiraFieldRow>
-
-          <div class="jira-issue-view__sidebar-actions">
-            <button class="btn btn-primary" type="button" :disabled="isBusy" @click="saveTicket">
-              {{ isSaving ? 'Guardando...' : 'Guardar' }}
+          <div class="issue-sidebar__actions">
+            <button class="btn btn-primary btn--block" type="button" :disabled="isBusy" @click="saveTicket">
+              {{ isSaving ? 'Guardando...' : 'Guardar cambios' }}
             </button>
-            <button class="btn btn-ghost btn--sm" type="button" :disabled="isBusy" @click="createSubtickets">Crear subtickets</button>
-            <button class="btn btn-ghost btn--sm" type="button" :disabled="isBusy" @click="duplicateTicket">Duplicar</button>
           </div>
+
+          <details class="issue-sidebar__extras">
+            <summary>Otras acciones</summary>
+            <div class="issue-sidebar__extras-body">
+              <JiraFieldRow label="Subtickets">
+                <input id="subticketQuantity" v-model.number="subticketQuantity" type="number" min="1" max="20" class="jira-field-control" />
+              </JiraFieldRow>
+              <button class="btn btn-ghost btn--sm btn--block" type="button" :disabled="isBusy" @click="createSubtickets">Crear subtickets</button>
+              <button class="btn btn-ghost btn--sm btn--block" type="button" :disabled="isBusy" @click="duplicateTicket">Duplicar ticket</button>
+            </div>
+          </details>
         </aside>
       </div>
     </template>
@@ -170,6 +182,7 @@ import { useUi } from '../../../shared/composables/useUi';
 import { uploadsService } from '../../../shared/services/uploadsService';
 import { eventText, fmtDate } from '../../../shared/utils/format';
 import IssueKeyLink from '../../../shared/components/IssueKeyLink.vue';
+import StatusLozenge from '../../../shared/components/StatusLozenge.vue';
 import JiraFieldRow from '../../../shared/components/JiraFieldRow.vue';
 import ActivityFeed from '../../../shared/components/ActivityFeed.vue';
 import { usePageChrome } from '../../../shared/composables/usePageChrome';
@@ -185,6 +198,7 @@ const { fetchCatalogBundle } = useCatalogs();
 const { fetchUsersList } = useUsers();
 
 const loading = ref(false);
+const showMoreFields = ref(false);
 const ticket = ref(null);
 const assignableUsers = ref([]);
 const commentBody = ref('');

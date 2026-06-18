@@ -1,8 +1,8 @@
 <template>
-  <section class="jira-page stack stack--compact">
-    <header class="jira-page-header">
+  <section class="page">
+    <header class="page__header">
       <h1>Mi perfil</h1>
-      <p class="jira-page-header__sub">Datos personales y seguridad de la cuenta.</p>
+      <p class="page__subtitle">Datos personales y seguridad de la cuenta.</p>
     </header>
 
     <div v-if="isLoading" class="panel">

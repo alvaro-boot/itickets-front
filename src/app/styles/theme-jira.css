@@ -226,7 +226,14 @@
 }
 
 /* --- Tabs --- */
+.sidebar-section__label:empty {
+  display: none;
+}
+
 .jira-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
   background: var(--surface);
   border: 1px solid var(--border);
   border-bottom: none;
@@ -811,8 +818,455 @@
     padding-left: 1rem;
     padding-right: 1rem;
   }
+}
 
-  .jira-breadcrumb {
-    padding: 0.5rem 1rem;
+/* --- Unified page layout --- */
+.page {
+  padding: 1.25rem 1.5rem 2rem;
+  max-width: 1280px;
+}
+
+.page__header {
+  margin-bottom: 1.25rem;
+}
+
+.page__header h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.page__header p,
+.page__subtitle {
+  margin: 0.35rem 0 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.page__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.page__toolbar-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.page__loading {
+  padding: 2rem 0;
+  text-align: center;
+}
+
+/* Tickets list */
+.page--tickets {
+  max-width: none;
+  padding: 1rem 1.5rem 1.5rem;
+}
+
+.jira-tabs--flat {
+  background: transparent;
+  border: none;
+  padding: 0;
+  gap: 0;
+}
+
+.jira-tabs--flat .jira-tab {
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+}
+
+.jira-tabs--flat .jira-tab.active {
+  border-bottom-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.8125rem;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 999px;
+  border: none;
+}
+
+.filter-chip button {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+}
+
+.filter-chip--clear {
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.filter-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.table-wrap--flat {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.table-wrap--flat table {
+  margin: 0;
+}
+
+.table-row-clickable:hover td {
+  background: #f4f5f7;
+}
+
+.assignee-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+}
+
+.table-footer--flat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.65rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  flex-wrap: wrap;
+}
+
+.page-size-select {
+  padding: 0.3rem 0.45rem;
+  font-size: 0.8125rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.pagination-label {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  min-width: 3.5rem;
+  text-align: center;
+}
+
+.btn--active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.btn--block {
+  width: 100%;
+  justify-content: center;
+}
+
+.hide-mobile {
+  display: table-cell;
+}
+
+/* Issue detail */
+.page--issue {
+  max-width: none;
+  padding: 1rem 1.5rem 2rem;
+}
+
+.issue-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 2rem;
+  align-items: start;
+}
+
+.issue-header {
+  margin-bottom: 1.5rem;
+}
+
+.issue-header__back {
+  display: inline-block;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
+.issue-header__back:hover {
+  color: var(--accent);
+}
+
+.issue-header__key-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.issue-header__summary {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: var(--text);
+  padding: 0.2rem 0;
+  line-height: 1.35;
+}
+
+.issue-header__summary:focus {
+  outline: none;
+  box-shadow: 0 2px 0 var(--accent);
+}
+
+.issue-section {
+  margin-bottom: 1.75rem;
+}
+
+.issue-section__title {
+  margin: 0 0 0.6rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.issue-comment-form {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.issue-comment-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.issue-attachment {
+  padding: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-top: 0.5rem;
+  background: var(--surface);
+}
+
+.issue-attachment img {
+  max-width: 100%;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+
+.issue-sidebar {
+  position: sticky;
+  top: 1rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.issue-sidebar__more {
+  width: 100%;
+  margin: 0.5rem 0;
+  padding: 0.4rem;
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.issue-sidebar__actions {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.issue-sidebar__extras {
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.issue-sidebar__extras summary {
+  cursor: pointer;
+  color: var(--muted);
+  padding: 0.35rem 0;
+}
+
+.issue-sidebar__extras-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+/* User menu */
+.user-menu {
+  position: relative;
+}
+
+.user-menu__trigger {
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+}
+
+.user-menu__dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 200px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  padding: 0.5rem 0;
+  z-index: 200;
+}
+
+.user-menu__name {
+  margin: 0;
+  padding: 0.5rem 1rem 0.15rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.user-menu__email {
+  margin: 0;
+  padding: 0 1rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.user-menu__item {
+  display: block;
+  width: 100%;
+  padding: 0.55rem 1rem;
+  font-size: 0.875rem;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.user-menu__item:hover {
+  background: var(--surface-2);
+}
+
+.user-menu__item--danger {
+  color: var(--danger);
+}
+
+/* Global search extras */
+.global-search__see-all {
+  display: block;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  border: none;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--accent);
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.global-search__see-all:hover {
+  background: var(--accent-soft);
+}
+
+/* Legacy alias */
+.jira-page {
+  padding: 1.25rem 1.5rem 2rem;
+  max-width: 1280px;
+}
+
+.jira-page-header {
+  margin-bottom: 1.25rem;
+}
+
+.jira-page-header h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.jira-page-header__sub {
+  margin: 0.35rem 0 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+@media (max-width: 1023px) {
+  .hide-mobile {
+    display: none;
+  }
+
+  .issue-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .issue-sidebar {
+    position: static;
+  }
+
+  .page,
+  .page--tickets,
+  .page--issue {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .page__toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .jira-tabs--flat {
+    overflow-x: auto;
+    flex-wrap: nowrap;
   }
 }

@@ -1,8 +1,8 @@
 <template>
-  <section class="jira-page stack stack--compact">
-    <header class="jira-page-header">
+  <section class="page">
+    <header class="page__header">
       <h1>Reportes</h1>
-      <p v-if="distribution.summary" class="jira-page-header__sub">
+      <p v-if="distribution.summary" class="page__subtitle">
         Resueltos {{ distribution.summary.resolved || 0 }} · Promedio {{ avgHours.toFixed(1) }} h · Pendientes {{ distribution.summary.pending || 0 }}
       </p>
     </header>

@@ -1,8 +1,8 @@
 <template>
-  <section class="jira-page stack stack--compact">
-    <header class="jira-page-header">
+  <section class="page">
+    <header class="page__header">
       <h1>Mis tareas</h1>
-      <p class="jira-page-header__sub">Total {{ total }} · Pendientes {{ pendingCount }} · Hechas {{ doneCount }}</p>
+      <p class="page__subtitle">Total {{ total }} · Pendientes {{ pendingCount }} · Hechas {{ doneCount }}</p>
     </header>
 
     <div class="jira-collapsible">

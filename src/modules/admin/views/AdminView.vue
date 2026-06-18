@@ -1,8 +1,8 @@
 <template>
-  <section class="jira-page stack stack--compact">
-    <header class="jira-page-header">
+  <section class="page">
+    <header class="page__header">
       <h1>Administración</h1>
-      <p class="jira-page-header__sub">Empresas {{ companies.length }} · Permisos {{ permissions.length }} · Módulos {{ enabledModulesCount }}</p>
+      <p class="page__subtitle">Empresas {{ companies.length }} · Permisos {{ permissions.length }} · Módulos {{ enabledModulesCount }}</p>
     </header>
 
     <div v-if="isLoading" class="panel">

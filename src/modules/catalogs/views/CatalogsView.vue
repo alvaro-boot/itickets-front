@@ -1,8 +1,8 @@
 <template>
-  <section class="jira-page stack stack--compact">
-    <header class="jira-page-header">
+  <section class="page">
+    <header class="page__header">
       <h1>Catálogos</h1>
-      <p class="jira-page-header__sub">Productos {{ products.length }} · Tipos {{ types.length }} · Áreas {{ areas.length }}</p>
+      <p class="page__subtitle">Productos {{ products.length }} · Tipos {{ types.length }} · Áreas {{ areas.length }}</p>
     </header>
 
     <div class="grid-2">
