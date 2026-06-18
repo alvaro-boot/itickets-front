@@ -1,5 +1,5 @@
 <template>
-  <span class="jira-lozenge" :class="toneClass">{{ label }}</span>
+  <span class="jira-lozenge" :class="toneClass">{{ displayLabel }}</span>
 </template>
 
 <script setup>
@@ -11,6 +11,12 @@ const props = defineProps({
   kind: { type: String, default: 'status' },
 });
 
+const displayLabel = computed(() => {
+  const raw = String(props.label || '').trim();
+  if (!raw) return '';
+  return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+});
+
 const toneClass = computed(() => {
   const code = String(props.code || '').toUpperCase();
   if (props.kind === 'priority') {
@@ -19,10 +25,10 @@ const toneClass = computed(() => {
     if (['LOW'].includes(code)) return 'jira-lozenge--success';
     return 'jira-lozenge--default';
   }
-  if (['OPEN', 'NEW', 'IN_PROGRESS', 'ASSIGNED'].includes(code)) return 'jira-lozenge--info';
-  if (['RESOLVED', 'CLOSED', 'DONE'].includes(code)) return 'jira-lozenge--success';
+  if (['OPEN', 'NEW', 'IN_PROGRESS', 'ASSIGNED', 'ABIERTO'].includes(code)) return 'jira-lozenge--info';
+  if (['RESOLVED', 'CLOSED', 'DONE', 'CERRADO', 'RESUELTO'].includes(code)) return 'jira-lozenge--success';
   if (['CANCELLED', 'REJECTED'].includes(code)) return 'jira-lozenge--danger';
-  if (['PENDING', 'WAITING'].includes(code)) return 'jira-lozenge--warning';
+  if (['PENDING', 'WAITING', 'ESPERA'].includes(code)) return 'jira-lozenge--warning';
   return 'jira-lozenge--default';
 });
 </script>

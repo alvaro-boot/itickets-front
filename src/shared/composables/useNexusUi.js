@@ -6,7 +6,8 @@ function readInitialEnabled() {
   const stored = localStorage.getItem(STORAGE_KEY);
   if (stored === 'true') return true;
   if (stored === 'false') return false;
-  return import.meta.env.VITE_NEXUS_UI === 'true';
+  if (import.meta.env.VITE_NEXUS_UI === 'false') return false;
+  return true;
 }
 
 const state = reactive({

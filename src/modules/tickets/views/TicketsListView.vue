@@ -1,5 +1,12 @@
 <template>
   <section class="page page--tickets">
+    <header class="page__header">
+      <div>
+        <h1 class="page__title">Tickets</h1>
+        <p class="page__subtitle">{{ paginationMeta }}</p>
+      </div>
+    </header>
+
     <div class="page__toolbar">
       <div class="jira-tabs jira-tabs--flat" role="tablist">
         <button
@@ -116,9 +123,9 @@
               />
             </td>
             <td class="hide-mobile">
-              <span v-if="ticket.assignee" class="assignee-cell">
-                <UserAvatar :name="ticket.assignee.fullName" :email="ticket.assignee.email" />
-                {{ ticket.assignee.fullName || ticket.assignee.email }}
+              <span v-if="ticket.assignee" class="assignee-cell" :title="ticket.assignee.fullName || ticket.assignee.email">
+                <UserAvatar :name="ticket.assignee.fullName" :email="ticket.assignee.email" size="sm" />
+                <span class="assignee-cell__name">{{ ticket.assignee.fullName || ticket.assignee.email }}</span>
               </span>
               <span v-else class="meta">—</span>
             </td>

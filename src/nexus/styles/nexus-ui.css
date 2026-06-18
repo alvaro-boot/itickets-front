@@ -483,3 +483,23 @@
     display: none;
   }
 }
+
+/* Contenido de páginas dentro del shell Nexus */
+.nexus-shell .page--tickets {
+  padding: 0;
+  max-width: none;
+}
+
+.nexus-shell .nx-content {
+  padding: 1.5rem 1.75rem 2.5rem;
+}
+
+.nexus-shell .page__title {
+  font-size: 1.375rem;
+}
+
+.nexus-ui-active {
+  --accent: var(--nx-primary, #2563eb);
+  --accent-2: var(--nx-primary-hover, #1d4ed8);
+  --accent-soft: var(--nx-primary-muted, #dbeafe);
+}
