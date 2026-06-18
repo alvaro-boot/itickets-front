@@ -1,17 +1,15 @@
 <template>
-  <section class="stack stack--compact">
-    <header class="view-toolbar">
-      <div>
-        <h1 class="view-toolbar__title">Incidentes</h1>
-        <div class="view-toolbar__meta">
-          <span class="metric-chip">Total <strong>{{ total }}</strong></span>
-          <span class="metric-chip">Abiertos <strong>{{ openCount }}</strong></span>
-          <span class="metric-chip">Resueltos <strong>{{ resolvedCount }}</strong></span>
-        </div>
-      </div>
+  <section class="jira-page stack stack--compact">
+    <header class="jira-page-header">
+      <h1>Incidentes</h1>
+      <p class="jira-page-header__sub">Total {{ total }} · Abiertos {{ openCount }} · Resueltos {{ resolvedCount }}</p>
     </header>
 
-    <div class="panel">
+    <div class="jira-collapsible">
+      <button type="button" class="jira-collapsible__toggle" @click="showCreate = !showCreate">
+        Registrar incidente <span>{{ showCreate ? '▲' : '▼' }}</span>
+      </button>
+      <div v-if="showCreate" class="jira-collapsible__body">
       <form class="grid-2" @submit.prevent="createIncident">
         <div class="field-stack" style="grid-column: 1 / -1">
           <label for="incidentTitle">Titulo</label>
@@ -39,6 +37,7 @@
           </button>
         </div>
       </form>
+      </div>
     </div>
 
     <div v-if="isLoading" class="panel">
@@ -49,7 +48,7 @@
       <div class="panel-header">
         <h3 style="margin: 0; font-size: 1rem">Listado</h3>
       </div>
-      <DataTable :rows="incidentRows" :columns="incidentColumns" row-key="id" empty-text="Sin incidentes" :initial-page-size="25">
+      <DataTable variant="jira" :rows="incidentRows" :columns="incidentColumns" row-key="id" empty-text="Sin incidentes" :initial-page-size="25">
         <template #cell-status="{ row }">
           <select :value="row.status" :disabled="updatingId === row.id" @change="updateStatus(row.id, $event.target.value)">
             <option value="OPEN">OPEN</option>
@@ -89,6 +88,7 @@ const page = ref(1);
 const limit = ref(25);
 const isLoading = ref(false);
 const isSubmitting = ref(false);
+const showCreate = ref(false);
 const updatingId = ref(null);
 const catalogs = reactive({
   products: [],

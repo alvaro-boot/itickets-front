@@ -1,14 +1,8 @@
 <template>
-  <section class="stack stack--compact">
-    <header class="view-toolbar">
-      <div>
-        <h1 class="view-toolbar__title">Administración global</h1>
-        <div class="view-toolbar__meta">
-          <span class="metric-chip">Empresas <strong>{{ companies.length }}</strong></span>
-          <span class="metric-chip">Permisos <strong>{{ permissions.length }}</strong></span>
-          <span class="metric-chip">Módulos activos <strong>{{ enabledModulesCount }}</strong></span>
-        </div>
-      </div>
+  <section class="jira-page stack stack--compact">
+    <header class="jira-page-header">
+      <h1>Administración</h1>
+      <p class="jira-page-header__sub">Empresas {{ companies.length }} · Permisos {{ permissions.length }} · Módulos {{ enabledModulesCount }}</p>
     </header>
 
     <div v-if="isLoading" class="panel">

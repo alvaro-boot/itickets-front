@@ -1,5 +1,5 @@
 <template>
-  <div class="datatable">
+  <div class="datatable" :class="{ 'datatable--jira': variant === 'jira' }">
     <div class="datatable__toolbar">
       <div v-if="searchable" class="field-stack datatable__search">
         <label :for="searchId">Buscar</label>
@@ -90,6 +90,7 @@ const props = defineProps({
   searchable: { type: Boolean, default: true },
   pageSizeOptions: { type: Array, default: () => [10, 25, 50] },
   initialPageSize: { type: Number, default: 10 },
+  variant: { type: String, default: '' },
 });
 
 const search = ref('');

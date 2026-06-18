@@ -1,14 +1,8 @@
 <template>
-  <section class="stack stack--compact">
-    <header class="view-toolbar">
-      <div>
-        <h1 class="view-toolbar__title">Catálogos</h1>
-        <div class="view-toolbar__meta">
-          <span class="metric-chip">Productos <strong>{{ products.length }}</strong></span>
-          <span class="metric-chip">Tipos <strong>{{ types.length }}</strong></span>
-          <span class="metric-chip">Áreas <strong>{{ areas.length }}</strong></span>
-        </div>
-      </div>
+  <section class="jira-page stack stack--compact">
+    <header class="jira-page-header">
+      <h1>Catálogos</h1>
+      <p class="jira-page-header__sub">Productos {{ products.length }} · Tipos {{ types.length }} · Áreas {{ areas.length }}</p>
     </header>
 
     <div class="grid-2">
@@ -65,18 +59,18 @@
     <div class="grid-2">
       <div class="panel">
         <h3 style="margin-top: 0">Productos registrados</h3>
-        <DataTable :rows="products" :columns="catalogColumns" row-key="id" empty-text="Sin productos" :initial-page-size="10" />
+        <DataTable variant="jira" :rows="products" :columns="catalogColumns" row-key="id" empty-text="Sin productos" :initial-page-size="10" />
       </div>
 
       <div class="panel">
         <h3 style="margin-top: 0">Tipos registrados</h3>
-        <DataTable :rows="types" :columns="catalogColumns" row-key="id" empty-text="Sin tipos" :initial-page-size="10" />
+        <DataTable variant="jira" :rows="types" :columns="catalogColumns" row-key="id" empty-text="Sin tipos" :initial-page-size="10" />
       </div>
     </div>
 
     <div class="panel">
       <h3 style="margin-top: 0">Áreas registradas</h3>
-      <DataTable :rows="areas" :columns="catalogColumns" row-key="id" empty-text="Sin áreas" :initial-page-size="10" />
+      <DataTable variant="jira" :rows="areas" :columns="catalogColumns" row-key="id" empty-text="Sin áreas" :initial-page-size="10" />
     </div>
   </section>
 </template>

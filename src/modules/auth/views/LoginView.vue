@@ -1,36 +1,11 @@
 <template>
   <div class="login-page">
     <main class="login-page__main">
-      <section class="login-hero-card login-hero-card--brand">
-        <div class="login-hero-brand">
-          <img src="/images/logo.png" alt="IT-Sistemas" class="login-hero-brand__logo" width="400" height="120" decoding="async" />
-        </div>
-
-        <div class="login-hero-card__stats">
-          <article class="login-mini-stat">
-            <strong>Tickets</strong>
-            <span>Seguimiento de casos y prioridades</span>
-          </article>
-          <article class="login-mini-stat">
-            <strong>Incidentes</strong>
-            <span>Visibilidad rápida de eventos abiertos</span>
-          </article>
-          <article class="login-mini-stat">
-            <strong>Tareas</strong>
-            <span>Trabajo diario organizado por usuario</span>
-          </article>
-          <article class="login-mini-stat">
-            <strong>Reportes</strong>
-            <span>Métricas de cierre y productividad</span>
-          </article>
-        </div>
-      </section>
-
       <section class="login-form-card">
+        <img src="/images/logo.png" alt="IT Service Desk" class="login-form-card__logo" width="200" height="60" decoding="async" />
         <div class="login-form-card__header">
-          <p class="spotlight-card__eyebrow">Iniciar sesión</p>
-          <h2>Bienvenido de vuelta</h2>
-          <p>Ingresa con tu cuenta corporativa para acceder al panel principal.</p>
+          <h2>Iniciar sesión</h2>
+          <p>Accede con tu cuenta corporativa al Service Desk.</p>
         </div>
 
         <form v-if="!auth.state.pendingCompanySelection" class="field-stack" @submit.prevent="submit">
@@ -38,7 +13,6 @@
             <label for="email">Correo corporativo</label>
             <input id="email" v-model.trim="form.email" type="email" autocomplete="username" placeholder="nombre@empresa.com" required />
           </div>
-
           <div class="field-stack">
             <label for="password">Contraseña</label>
             <div class="password-wrap password-wrap--stacked">
@@ -55,16 +29,12 @@
               </button>
             </div>
           </div>
-
           <p class="login-feedback" :class="{ 'login-feedback--error': feedback && !submitting }">
             {{ feedback || 'Usa tus credenciales para continuar.' }}
           </p>
-
-          <div class="actions-row">
-            <button class="btn btn-primary login-submit" type="submit" :disabled="submitting">
-              {{ submitting ? 'Ingresando...' : 'Entrar al workspace' }}
-            </button>
-          </div>
+          <button class="btn btn-primary login-submit" type="submit" :disabled="submitting">
+            {{ submitting ? 'Ingresando...' : 'Continuar' }}
+          </button>
         </form>
 
         <form v-else class="field-stack" @submit.prevent="submitCompanySelection">
@@ -76,23 +46,13 @@
               </option>
             </select>
           </div>
-
           <p class="login-feedback" :class="{ 'login-feedback--error': feedback && !submitting }">
             {{ feedback || 'Selecciona la empresa para iniciar tu sesión.' }}
           </p>
-
-          <div class="actions-row">
-            <button class="btn btn-primary login-submit" type="submit" :disabled="submitting || !selectedCompanyId">
-              {{ submitting ? 'Abriendo espacio...' : 'Continuar' }}
-            </button>
-          </div>
+          <button class="btn btn-primary login-submit" type="submit" :disabled="submitting || !selectedCompanyId">
+            {{ submitting ? 'Abriendo espacio...' : 'Continuar' }}
+          </button>
         </form>
-
-        <div class="spotlight-card__meta">
-          <span class="spotlight-pill">Sesión segura</span>
-          <span class="spotlight-pill">Diseño modular</span>
-          <span class="spotlight-pill">Vista centralizada</span>
-        </div>
       </section>
     </main>
   </div>

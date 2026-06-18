@@ -35,9 +35,8 @@ const routes = [
         component: TicketsListView,
         meta: {
           requiresAuth: true,
-          hideHero: true,
-          title: 'Centro de tickets',
-          showBack: false,
+          title: 'Todos los tickets',
+          breadcrumb: [{ label: 'Tickets', to: '/tickets' }],
         },
       },
       {
@@ -46,8 +45,11 @@ const routes = [
         component: TicketCreateView,
         meta: {
           requiresAuth: true,
-          hideHero: true,
-          title: 'Nuevo ticket',
+          title: 'Crear ticket',
+          breadcrumb: [
+            { label: 'Tickets', to: '/tickets' },
+            { label: 'Crear ticket' },
+          ],
         },
       },
       {
@@ -56,8 +58,8 @@ const routes = [
         component: TicketDetailView,
         meta: {
           requiresAuth: true,
-          hideHero: true,
           title: 'Detalle de ticket',
+          breadcrumb: [{ label: 'Tickets', to: '/tickets' }],
         },
       },
       {
@@ -66,8 +68,8 @@ const routes = [
         component: IncidentsView,
         meta: {
           requiresAuth: true,
-          hideHero: true,
-          title: 'Incidentes generales',
+          title: 'Incidentes',
+          breadcrumb: [{ label: 'Incidentes' }],
         },
       },
       {
@@ -76,8 +78,8 @@ const routes = [
         component: TasksView,
         meta: {
           requiresAuth: true,
-          hideHero: true,
           title: 'Mis tareas',
+          breadcrumb: [{ label: 'Mis tareas' }],
         },
       },
       {
@@ -86,8 +88,8 @@ const routes = [
         component: ProfileView,
         meta: {
           requiresAuth: true,
-          hideHero: true,
           title: 'Mi perfil',
+          breadcrumb: [{ label: 'Mi perfil' }],
         },
       },
       {
@@ -96,8 +98,8 @@ const routes = [
         component: CatalogsView,
         meta: {
           requiresAuth: true,
-          hideHero: true,
-          title: 'Catalogos',
+          title: 'Catálogos',
+          breadcrumb: [{ label: 'Catálogos' }],
         },
       },
       {
@@ -106,8 +108,8 @@ const routes = [
         component: AdminView,
         meta: {
           requiresAuth: true,
-          hideHero: true,
-          title: 'Administración global',
+          title: 'Administración',
+          breadcrumb: [{ label: 'Administración' }],
         },
       },
       {
@@ -116,8 +118,8 @@ const routes = [
         component: ReportsView,
         meta: {
           requiresAuth: true,
-          hideHero: true,
-          title: 'Dashboard de reportes',
+          title: 'Reportes',
+          breadcrumb: [{ label: 'Reportes' }],
         },
       },
     ],

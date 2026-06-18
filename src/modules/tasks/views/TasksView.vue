@@ -1,17 +1,15 @@
 <template>
-  <section class="stack stack--compact">
-    <header class="view-toolbar">
-      <div>
-        <h1 class="view-toolbar__title">Mis tareas</h1>
-        <div class="view-toolbar__meta">
-          <span class="metric-chip">Total <strong>{{ total }}</strong></span>
-          <span class="metric-chip">Pendientes <strong>{{ pendingCount }}</strong></span>
-          <span class="metric-chip">Hechas <strong>{{ doneCount }}</strong></span>
-        </div>
-      </div>
+  <section class="jira-page stack stack--compact">
+    <header class="jira-page-header">
+      <h1>Mis tareas</h1>
+      <p class="jira-page-header__sub">Total {{ total }} · Pendientes {{ pendingCount }} · Hechas {{ doneCount }}</p>
     </header>
 
-    <div class="panel">
+    <div class="jira-collapsible">
+      <button type="button" class="jira-collapsible__toggle" @click="showCreate = !showCreate">
+        Nueva tarea <span>{{ showCreate ? '▲' : '▼' }}</span>
+      </button>
+      <div v-if="showCreate" class="jira-collapsible__body">
       <form class="grid-2" @submit.prevent="createTask">
         <div class="field-stack" style="grid-column: 1 / -1">
           <label for="taskTitle">Titulo</label>
@@ -31,6 +29,7 @@
           </button>
         </div>
       </form>
+      </div>
     </div>
 
     <div v-if="isLoading" class="panel">
@@ -38,7 +37,7 @@
     </div>
 
     <div class="panel">
-      <DataTable :rows="taskRows" :columns="taskColumns" row-key="id" empty-text="No tienes tareas registradas" :initial-page-size="25">
+      <DataTable variant="jira" :rows="taskRows" :columns="taskColumns" row-key="id" empty-text="No tienes tareas registradas" :initial-page-size="25">
         <template #cell-actionLabel="{ row }">
           <button class="btn btn-ghost" type="button" :disabled="togglingId === row.id" @click="toggleTask(row)">
             {{ togglingId === row.id ? 'Actualizando...' : row.actionLabel }}
@@ -69,6 +68,7 @@ const page = ref(1);
 const limit = ref(25);
 const isLoading = ref(false);
 const isSubmitting = ref(false);
+const showCreate = ref(false);
 const togglingId = ref(null);
 const form = reactive({
   title: '',

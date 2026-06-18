@@ -1,62 +1,48 @@
 <template>
-  <section class="stack stack--compact">
-    <header class="view-toolbar">
-      <div>
-        <h1 class="view-toolbar__title">Centro de tickets</h1>
-        <div class="view-toolbar__meta">
-          <span class="metric-chip">Total <strong>{{ tabTotals.all || 0 }}</strong></span>
-          <span class="metric-chip">Míos <strong>{{ tabTotals.mine || 0 }}</strong></span>
-          <span class="metric-chip">Sin asignar <strong>{{ tabTotals.unassigned || 0 }}</strong></span>
-        </div>
-      </div>
-      <div class="view-toolbar__actions">
-        <RouterLink class="btn btn-primary btn--sm" to="/tickets/new">Nuevo ticket</RouterLink>
-      </div>
+  <section class="jira-page stack stack--compact">
+    <header class="jira-page-header">
+      <h1>Todos los tickets</h1>
+      <p class="jira-page-header__sub">
+        Total {{ tabTotals.all || 0 }} · Míos {{ tabTotals.mine || 0 }} · Sin asignar {{ tabTotals.unassigned || 0 }}
+      </p>
     </header>
-    <div class="panel search-panel search-panel--compact" role="region" aria-label="Filtros de tickets">
-      <form class="search-panel__row" @submit.prevent="applyFilters">
-        <div class="field-stack search-panel__field search-panel__field--query">
-          <label for="ticket-search">Buscar ticket</label>
-          <input
-            id="ticket-search"
-            v-model.trim="query"
-            placeholder="Buscar por título o descripción"
-            @keyup.enter="applyFilters"
-          />
-        </div>
 
-        <div class="field-stack search-panel__field">
-          <label for="from">Desde</label>
-          <input id="from" type="date" v-model="filters.from" />
-        </div>
+    <form class="jira-filters" @submit.prevent="applyFilters">
+      <div class="field-stack search-panel__field search-panel__field--query">
+        <label for="ticket-search">Buscar</label>
+        <input
+          id="ticket-search"
+          v-model.trim="query"
+          placeholder="Título o COOT-123"
+          @keyup.enter="applyFilters"
+        />
+      </div>
+      <div class="field-stack">
+        <label for="from">Desde</label>
+        <input id="from" type="date" v-model="filters.from" />
+      </div>
+      <div class="field-stack">
+        <label for="to">Hasta</label>
+        <input id="to" type="date" v-model="filters.to" />
+      </div>
+      <div class="field-stack">
+        <label for="productId">Producto</label>
+        <select id="productId" v-model="filters.productId">
+          <option value="">Todos</option>
+          <option v-for="product in products" :key="product.id" :value="product.id">{{ product.name }}</option>
+        </select>
+      </div>
+      <div class="actions-row">
+        <button class="btn btn-primary btn--sm" type="submit">Buscar</button>
+        <button class="btn btn-ghost btn--sm" type="button" @click="clearFilters">Limpiar</button>
+      </div>
+    </form>
 
-        <div class="field-stack search-panel__field">
-          <label for="to">Hasta</label>
-          <input id="to" type="date" v-model="filters.to" />
-        </div>
-
-        <div class="field-stack search-panel__field">
-          <label for="productId">Producto</label>
-          <select id="productId" v-model="filters.productId">
-            <option value="">Todos</option>
-            <option v-for="product in products" :key="product.id" :value="product.id">
-              {{ product.name }}
-            </option>
-          </select>
-        </div>
-
-        <div class="actions-row search-panel__actions">
-          <button class="btn btn-primary search-panel__btn" type="submit">Consultar</button>
-          <button class="btn btn-ghost search-panel__btn" type="button" @click="clearFilters">Limpiar</button>
-        </div>
-      </form>
-    </div>
-
-    <div class="ticket-tabs ticket-tabs--compact" role="tablist" aria-label="Vistas de tickets">
+    <div class="jira-tabs" role="tablist">
       <button
         v-for="tab in tabs"
         :key="tab.key"
-        class="ticket-tab ticket-tab--compact"
+        class="jira-tab"
         :class="{ active: activeTab === tab.key }"
         type="button"
         @click="activeTab = tab.key"
@@ -65,61 +51,32 @@
       </button>
     </div>
 
-    <div class="table-wrap table-wrap--compact">
+    <div class="table-wrap table-wrap--jira">
       <table>
         <thead>
           <tr>
+            <th>Clave</th>
             <th>
-              <button
-                type="button"
-                class="datatable__sort-btn"
-                :class="{ 'datatable__sort-btn--active': sortBy === 'title' }"
-                @click="toggleSort('title')"
-              >
-                <span>Título</span>
+              <button type="button" class="datatable__sort-btn" :class="{ 'datatable__sort-btn--active': sortBy === 'title' }" @click="toggleSort('title')">
+                <span>Resumen</span>
                 <span class="datatable__sort-indicator">{{ sortIndicator('title') }}</span>
               </button>
             </th>
+            <th>Estado</th>
             <th>
-              <button
-                type="button"
-                class="datatable__sort-btn"
-                :class="{ 'datatable__sort-btn--active': sortBy === 'product' }"
-                @click="toggleSort('product')"
-              >
-                <span>Producto</span>
-                <span class="datatable__sort-indicator">{{ sortIndicator('product') }}</span>
-              </button>
-            </th>
-            <th>
-              <button
-                type="button"
-                class="datatable__sort-btn"
-                :class="{ 'datatable__sort-btn--active': sortBy === 'priority' }"
-                @click="toggleSort('priority')"
-              >
+              <button type="button" class="datatable__sort-btn" :class="{ 'datatable__sort-btn--active': sortBy === 'priority' }" @click="toggleSort('priority')">
                 <span>Prioridad</span>
                 <span class="datatable__sort-indicator">{{ sortIndicator('priority') }}</span>
               </button>
             </th>
             <th>
-              <button
-                type="button"
-                class="datatable__sort-btn"
-                :class="{ 'datatable__sort-btn--active': sortBy === 'assignee' }"
-                @click="toggleSort('assignee')"
-              >
-                <span>Asignado a</span>
+              <button type="button" class="datatable__sort-btn" :class="{ 'datatable__sort-btn--active': sortBy === 'assignee' }" @click="toggleSort('assignee')">
+                <span>Asignado</span>
                 <span class="datatable__sort-indicator">{{ sortIndicator('assignee') }}</span>
               </button>
             </th>
             <th>
-              <button
-                type="button"
-                class="datatable__sort-btn"
-                :class="{ 'datatable__sort-btn--active': sortBy === 'updatedAt' }"
-                @click="toggleSort('updatedAt')"
-              >
+              <button type="button" class="datatable__sort-btn" :class="{ 'datatable__sort-btn--active': sortBy === 'updatedAt' }" @click="toggleSort('updatedAt')">
                 <span>Actualizado</span>
                 <span class="datatable__sort-indicator">{{ sortIndicator('updatedAt') }}</span>
               </button>
@@ -128,31 +85,42 @@
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="5">
+            <td colspan="6">
               <div class="skeleton-stack skeleton-rows">
                 <div v-for="n in 6" :key="n" class="skeleton-line skeleton-line--lg skeleton-line--w90"></div>
               </div>
             </td>
           </tr>
           <tr v-else-if="visibleRows.length === 0">
-            <td colspan="5">
-              <div class="empty-state">No hay tickets para esta vista.</div>
-            </td>
+            <td colspan="6"><div class="empty-state">No hay tickets para esta vista.</div></td>
           </tr>
           <tr v-for="ticket in visibleRows" :key="ticket.id">
             <td>
-              <div class="table-title-cell">
-                <strong>
-                  <RouterLink :to="{ path: `/tickets/${ticket.id}`, query: currentListQuery }">{{ ticket.title }}</RouterLink>
-                </strong>
-                <span>#{{ ticket.id }}</span>
-              </div>
+              <IssueKeyLink :ticket="ticket" :to="{ path: `/tickets/${ticket.id}`, query: currentListQuery }" />
             </td>
             <td>
-              {{ ticket.product?.name || 'Sin producto' }}
+              <RouterLink class="table-summary-link" :to="{ path: `/tickets/${ticket.id}`, query: currentListQuery }">
+                {{ ticket.title }}
+              </RouterLink>
             </td>
-            <td><span :class="priorityClass(ticket.priority?.level)">{{ ticket.priority?.name || '' }}</span></td>
-            <td>{{ ticket.assignee?.fullName || ticket.assignee?.email || 'Sin asignar' }}</td>
+            <td>
+              <StatusLozenge v-if="ticket.status?.name" :label="ticket.status.name" :code="ticket.status.code" />
+            </td>
+            <td>
+              <StatusLozenge
+                v-if="ticket.priority?.name"
+                :label="ticket.priority.name"
+                :code="ticket.priority.code"
+                kind="priority"
+              />
+            </td>
+            <td>
+              <span v-if="ticket.assignee" style="display:inline-flex;align-items:center;gap:0.35rem">
+                <UserAvatar :name="ticket.assignee.fullName" :email="ticket.assignee.email" />
+                {{ ticket.assignee.fullName || ticket.assignee.email }}
+              </span>
+              <span v-else class="meta">Sin asignar</span>
+            </td>
             <td class="meta">{{ fmtDate(ticket.updatedAt) }}</td>
           </tr>
         </tbody>
@@ -162,21 +130,15 @@
     <div class="table-footer" aria-label="Paginación de tickets">
       <div class="table-footer__meta">{{ paginationMeta }}</div>
       <div class="table-footer__controls">
-        <div class="actions-row" style="gap: 0.6rem">
-          <label class="meta" style="display:flex;gap:0.6rem;align-items:center;margin:0">
-            Mostrar
-            <select v-model.number="limit" @change="handleLimitChange" style="width: 92px">
-              <option :value="10">10</option>
-              <option :value="25">25</option>
-              <option :value="50">50</option>
-            </select>
-          </label>
-        </div>
-
-        <button class="btn btn-ghost pagination-btn" type="button" :disabled="page === 1" @click="prevPage">
-          Anterior
-        </button>
-
+        <label class="meta" style="display:flex;gap:0.6rem;align-items:center;margin:0">
+          Mostrar
+          <select v-model.number="limit" @change="handleLimitChange" style="width: 92px">
+            <option :value="10">10</option>
+            <option :value="25">25</option>
+            <option :value="50">50</option>
+          </select>
+        </label>
+        <button class="btn btn-ghost pagination-btn" type="button" :disabled="page === 1" @click="prevPage">Anterior</button>
         <div class="pagination-pages">
           <button
             v-for="p in pageButtons"
@@ -189,15 +151,7 @@
             {{ p }}
           </button>
         </div>
-
-        <button
-          class="btn btn-ghost pagination-btn"
-          type="button"
-          :disabled="page >= totalPages"
-          @click="nextPage"
-        >
-          Siguiente
-        </button>
+        <button class="btn btn-ghost pagination-btn" type="button" :disabled="page >= totalPages" @click="nextPage">Siguiente</button>
       </div>
     </div>
   </section>
@@ -209,7 +163,10 @@ import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { ticketsService } from '../services/ticketsService';
 import { useCatalogs } from '../../../shared/composables/useCatalogs';
 import { useUi } from '../../../shared/composables/useUi';
-import { fmtDate, priorityClass } from '../../../shared/utils/format';
+import { fmtDate } from '../../../shared/utils/format';
+import IssueKeyLink from '../../../shared/components/IssueKeyLink.vue';
+import StatusLozenge from '../../../shared/components/StatusLozenge.vue';
+import UserAvatar from '../../../shared/components/UserAvatar.vue';
 
 defineOptions({ name: 'tickets' });
 
@@ -220,11 +177,7 @@ const { fetchCatalogBundle } = useCatalogs();
 
 const loading = ref(false);
 const query = ref('');
-const filters = reactive({
-  from: '',
-  to: '',
-  productId: '',
-});
+const filters = reactive({ from: '', to: '', productId: '' });
 const rows = ref([]);
 const products = ref([]);
 const activeTab = ref('all');
@@ -233,17 +186,12 @@ const limit = ref(25);
 const sortBy = ref('updatedAt');
 const sortDir = ref('desc');
 const total = ref(0);
-const tabTotals = ref({
-  all: 0,
-  mine: 0,
-  unassigned: 0,
-  closed: 0,
-});
+const tabTotals = ref({ all: 0, mine: 0, unassigned: 0, closed: 0 });
 
 const tabs = [
-  { key: 'all', label: 'Tickets en general' },
+  { key: 'all', label: 'Todos' },
   { key: 'mine', label: 'Mis asignados' },
-  { key: 'unassigned', label: 'No asignados' },
+  { key: 'unassigned', label: 'Sin asignar' },
   { key: 'closed', label: 'Cerrados' },
 ];
 
@@ -254,10 +202,7 @@ const currentListQuery = computed(() => ({
   to: filters.to || undefined,
   productId: filters.productId || undefined,
   sortBy: sortBy.value !== 'updatedAt' ? sortBy.value : undefined,
-  sortDir:
-    (sortBy.value !== 'updatedAt' || sortDir.value !== 'desc')
-      ? sortDir.value
-      : undefined,
+  sortDir: sortBy.value !== 'updatedAt' || sortDir.value !== 'desc' ? sortDir.value : undefined,
   view: activeTab.value !== 'all' ? activeTab.value : undefined,
   page: page.value > 1 ? String(page.value) : undefined,
   limit: limit.value !== 25 ? String(limit.value) : undefined,
@@ -287,19 +232,14 @@ function hydrateFromRouteQuery() {
 }
 
 async function replaceQueryFromState() {
-  await router.replace({
-    path: '/tickets',
-    query: currentListQuery.value,
-  });
+  await router.replace({ path: '/tickets', query: currentListQuery.value });
 }
 
 async function loadTickets({ syncRoute = false, refreshTotals = false } = {}) {
   loading.value = true;
   try {
-    if (syncRoute) {
-      await replaceQueryFromState();
-    }
-    const listParams = {
+    if (syncRoute) await replaceQueryFromState();
+    const payload = await ticketsService.list({
       q: query.value,
       from: filters.from,
       to: filters.to,
@@ -310,8 +250,7 @@ async function loadTickets({ syncRoute = false, refreshTotals = false } = {}) {
       page: page.value,
       limit: limit.value,
       includeTabCounts: refreshTotals,
-    };
-    const payload = await ticketsService.list(listParams);
+    });
     rows.value = payload?.items || [];
     total.value = payload?.total || 0;
     if (payload?.tabCounts) {
@@ -322,10 +261,7 @@ async function loadTickets({ syncRoute = false, refreshTotals = false } = {}) {
         closed: Number(payload.tabCounts.closed ?? 0),
       };
     }
-    tabTotals.value = {
-      ...tabTotals.value,
-      [activeTab.value]: total.value,
-    };
+    tabTotals.value = { ...tabTotals.value, [activeTab.value]: total.value };
   } catch (error) {
     ui.showToast(error.message || 'No se pudo cargar la lista.', true);
   } finally {
@@ -372,7 +308,6 @@ function handleLimitChange() {
 }
 
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / limit.value)));
-
 const startIndex = computed(() => (total.value === 0 ? 0 : (page.value - 1) * limit.value + 1));
 const endIndex = computed(() => Math.min(page.value * limit.value, total.value));
 const paginationMeta = computed(() => `Mostrando ${startIndex.value}-${endIndex.value} de ${total.value} tickets`);

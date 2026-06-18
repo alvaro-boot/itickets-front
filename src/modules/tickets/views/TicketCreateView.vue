@@ -1,16 +1,11 @@
 <template>
-  <section class="stack stack--compact ticket-create-page">
-    <header class="view-toolbar ticket-create-toolbar">
-      <h1 class="view-toolbar__title">Nuevo ticket</h1>
-      <div class="view-toolbar__actions">
-        <RouterLink class="btn btn-ghost btn--sm" to="/tickets">Cancelar</RouterLink>
-        <button class="btn btn-primary btn--sm" type="button" :disabled="submitting" @click="submit">
-          {{ submitting ? 'Creando…' : 'Crear ticket' }}
-        </button>
-      </div>
+  <section class="jira-page stack stack--compact ticket-create-page">
+    <header class="jira-page-header">
+      <h1>Crear ticket</h1>
+      <p class="jira-page-header__sub">Completa el resumen y la clasificación del caso.</p>
     </header>
 
-    <form class="ticket-create-layout" @submit.prevent="submit">
+    <form class="jira-detail-layout ticket-create-layout" @submit.prevent="submit">
       <section class="panel ticket-create-main">
         <div class="field-stack field-stack--dense">
           <label for="title">Título</label>
@@ -34,7 +29,7 @@
         </div>
       </section>
 
-      <aside class="panel ticket-create-side">
+      <aside class="panel ticket-create-side jira-meta-panel">
         <p class="ticket-create-side__heading">Clasificación</p>
         <div class="ticket-create-fields">
           <div class="field-stack field-stack--dense">
@@ -116,6 +111,12 @@
             <input id="attachments" ref="attachmentsInput" type="file" multiple class="input-file--dense" />
             <p class="meta field-hint">Opcional. Se agregan al primer comentario.</p>
           </div>
+        </div>
+        <div class="actions-row" style="flex-direction:column;margin-top:0.75rem">
+          <button class="btn btn-primary" type="submit" :disabled="submitting">
+            {{ submitting ? 'Creando…' : 'Crear ticket' }}
+          </button>
+          <RouterLink class="btn btn-ghost btn--sm" to="/tickets">Cancelar</RouterLink>
         </div>
       </aside>
     </form>

@@ -1,18 +1,13 @@
 <template>
-  <section class="stack stack--compact">
-    <header class="view-toolbar">
-      <div>
-        <h1 class="view-toolbar__title">Reportes operativos</h1>
-        <div v-if="distribution.summary" class="view-toolbar__meta">
-          <span class="metric-chip">Resueltos <strong>{{ distribution.summary.resolved || 0 }}</strong></span>
-          <span class="metric-chip">Promedio <strong>{{ avgHours.toFixed(1) }} h</strong></span>
-          <span class="metric-chip">Pendientes <strong>{{ distribution.summary.pending || 0 }}</strong></span>
-        </div>
-      </div>
+  <section class="jira-page stack stack--compact">
+    <header class="jira-page-header">
+      <h1>Reportes</h1>
+      <p v-if="distribution.summary" class="jira-page-header__sub">
+        Resueltos {{ distribution.summary.resolved || 0 }} · Promedio {{ avgHours.toFixed(1) }} h · Pendientes {{ distribution.summary.pending || 0 }}
+      </p>
     </header>
 
-    <div class="panel search-panel">
-      <form class="grid-2" @submit.prevent="loadReports">
+    <form class="jira-filters" @submit.prevent="loadReports">
         <div class="field-stack">
           <label for="from">Desde</label>
           <input id="from" v-model="filters.from" type="date" required />
@@ -37,13 +32,10 @@
             <option value="pending">Pendientes</option>
           </select>
         </div>
-        <div style="grid-column: 1 / -1">
-          <button class="btn btn-primary" type="submit" :disabled="isLoading">
-            {{ isLoading ? 'Consultando...' : 'Consultar' }}
-          </button>
-        </div>
-      </form>
-    </div>
+        <button class="btn btn-primary btn--sm" type="submit" :disabled="isLoading">
+          {{ isLoading ? 'Consultando...' : 'Consultar' }}
+        </button>
+    </form>
 
     <div v-if="isLoading" class="panel">
       <div class="skeleton-stack">
@@ -117,7 +109,7 @@
     <div class="grid-2">
       <div class="panel">
         <h3 style="margin: 0 0 0.6rem">Distribución por producto</h3>
-        <DataTable
+        <DataTable variant="jira"
           :rows="productRows"
           :columns="dimensionColumns"
           row-key="rowKey"
@@ -127,7 +119,7 @@
       </div>
       <div class="panel">
         <h3 style="margin: 0 0 0.6rem">Distribución por tipo</h3>
-        <DataTable
+        <DataTable variant="jira"
           :rows="typeRows"
           :columns="dimensionColumns"
           row-key="rowKey"
@@ -139,7 +131,7 @@
 
     <div class="panel">
       <h3 style="margin: 0 0 0.6rem">Distribución por estado</h3>
-      <DataTable
+      <DataTable variant="jira"
         :rows="statusRows"
         :columns="statusColumns"
         row-key="rowKey"
@@ -165,7 +157,7 @@
         Total horas (suma por producto): <strong>{{ totalClosedHours }} h</strong>
       </p>
       <div style="margin-top: 1rem">
-        <DataTable
+        <DataTable variant="jira"
           :rows="closedProductMinutesRows"
           :columns="closedHoursColumns"
           row-key="rowKey"
@@ -177,7 +169,7 @@
 
     <div class="panel">
       <h3 style="margin: 0 0 0.6rem">Detalle de resolución</h3>
-      <DataTable
+      <DataTable variant="jira"
         :rows="resolutionTicketsRows"
         :columns="resolutionColumns"
         row-key="id"
@@ -189,7 +181,7 @@
     <div class="grid-2">
       <div class="panel">
         <h3 style="margin: 0 0 0.6rem">Carga por asignado</h3>
-        <DataTable
+        <DataTable variant="jira"
           :rows="assigneeRows"
           :columns="usersColumns"
           row-key="rowKey"
@@ -200,7 +192,7 @@
 
       <div class="panel">
         <h3 style="margin: 0 0 0.6rem">Creación por usuario</h3>
-        <DataTable
+        <DataTable variant="jira"
           :rows="creatorRows"
           :columns="usersColumns"
           row-key="rowKey"

@@ -551,8 +551,9 @@ select optgroup {
 }
 
 .btn-ghost {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
 }
 
 .btn--sm {
@@ -1392,29 +1393,30 @@ select optgroup {
 }
 
 .login-page__main {
-  min-height: calc(100vh - 48px);
+  min-height: 100vh;
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(340px, 420px);
-  gap: 20px;
-  align-items: stretch;
+  place-items: center;
+  padding: 1.5rem;
 }
 
 .login-hero-card,
 .login-form-card {
-  border-radius: 22px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.32);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+  background: var(--surface);
 }
 
 .login-hero-card {
-  padding: 1.5rem;
-  background:
-    radial-gradient(circle at top left, rgba(91, 140, 255, 0.25), transparent 28%),
-    radial-gradient(circle at bottom right, rgba(126, 107, 255, 0.14), transparent 24%),
-    linear-gradient(145deg, rgba(14, 24, 41, 0.9), rgba(9, 14, 24, 0.92));
+  display: none;
+}
+
+.login-form-card {
+  width: min(100%, 400px);
+  padding: 2rem 1.75rem;
   display: grid;
-  grid-template-rows: 1fr auto;
-  gap: 1.25rem;
+  align-content: center;
+  gap: 1rem;
 }
 
 .login-hero-card--brand .login-hero-brand {
@@ -1462,7 +1464,7 @@ select optgroup {
 
 .login-form-card {
   padding: 1.5rem;
-  background: linear-gradient(180deg, rgba(18, 27, 43, 0.92), rgba(10, 16, 28, 0.9));
+  background: var(--surface);
   display: grid;
   align-content: center;
   gap: 1rem;
@@ -1494,7 +1496,7 @@ select optgroup {
 }
 
 .login-feedback--error {
-  color: #ff97a5;
+  color: var(--danger);
 }
 
 .login-submit {
@@ -1545,27 +1547,27 @@ select optgroup {
 
 .chart-label {
   font-size: 0.86rem;
-  color: #d9e5ff;
+  color: var(--text-secondary);
 }
 
 .chart-track {
   height: 10px;
   border-radius: 999px;
-  background: #22324d;
+  background: var(--surface-3);
   overflow: hidden;
-  border: 1px solid #35507c;
+  border: 1px solid var(--border);
 }
 
 .chart-track span {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(120deg, var(--accent), var(--accent-2));
+  background: var(--accent);
 }
 
 .chart-value {
   text-align: right;
-  color: #cedcff;
+  color: var(--text-secondary);
   font-weight: 600;
   font-size: 0.84rem;
 }
@@ -1586,7 +1588,7 @@ select optgroup {
 }
 
 .meta-strong {
-  color: #d5e0ff;
+  color: var(--text);
 }
 
 .route-fade-slide-enter-active,

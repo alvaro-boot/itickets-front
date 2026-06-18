@@ -1,326 +1,160 @@
 <template>
-  <section class="stack stack--compact">
-    <div v-if="loading" class="panel">
-      <p class="meta">Cargando ticket...</p>
-    </div>
+  <section class="jira-page stack stack--compact">
+    <div v-if="loading" class="panel"><p class="meta">Cargando ticket...</p></div>
 
     <template v-else-if="ticket">
-      <header class="ticket-detail-toolbar">
-        <div>
-          <p class="ticket-detail-toolbar__id">Ticket #{{ ticket.id }}</p>
-          <h1>{{ ticket.title }}</h1>
-          <div class="view-toolbar__meta" style="margin-top: 0.35rem">
-            <span class="status-pill ticket-status-pill"><span class="status-dot"></span>{{ selectedStatusName }}</span>
-            <span class="metric-chip">Prioridad <strong>{{ selectedPriorityName }}</strong></span>
-            <span class="metric-chip">Tiempo <strong>{{ ticket.totalLoggedMinutes || 0 }} min</strong></span>
-            <span class="metric-chip">Actividad <strong>{{ activityCount }}</strong></span>
-          </div>
-        </div>
-        <div class="view-toolbar__actions">
-          <RouterLink class="btn btn-ghost btn--sm" :to="backToList">Lista</RouterLink>
-        </div>
-      </header>
-
       <div v-if="isBusy" class="ticket-loading-hint" role="status" aria-live="polite">
         <span class="ticket-loading-hint__dot"></span>
         <span>{{ busyMessage }}</span>
       </div>
 
-      <section class="ticket-tabs ticket-tabs--compact" role="tablist" aria-label="Secciones del ticket">
-        <button
-          v-for="tab in workspaceTabs"
-          :key="tab.key"
-          class="ticket-tab"
-          :class="{ active: activeWorkspaceTab === tab.key, 'ticket-tab--disabled': tab.disabled }"
-          :disabled="tab.disabled"
-          type="button"
-          @click="activeWorkspaceTab = tab.key"
-        >
-          {{ tab.label }}
-          <span v-if="tab.count != null" class="badge">{{ tab.count }}</span>
-        </button>
-      </section>
-
-      <section class="ticket-workspace ticket-detail-layout">
-        <div v-if="activeWorkspaceTab === 'overview'" class="ticket-overview-workspace">
+      <div class="jira-detail-layout">
+        <div class="jira-detail-main">
           <article class="panel ticket-panel">
-          <div class="panel-header">
-            <div class="page-title">
-              <h2 style="font-size: 1.05rem">Datos principales</h2>
-              <p>Edita el contexto del ticket y mantén limpia la información operativa.</p>
+            <div style="display:flex;align-items:center;gap:0.65rem;margin-bottom:0.65rem">
+              <IssueKeyLink :ticket="ticket" />
+              <RouterLink class="btn btn-ghost btn--sm" :to="backToList">← Lista</RouterLink>
             </div>
-          </div>
-          <div class="ticket-edit-block">
-            <div class="grid-2">
-                <div class="field-stack" style="grid-column: 1 / -1">
-                  <label for="title">Título</label>
-                  <input id="title" v-model.trim="form.title" required minlength="3" />
-                </div>
-                <div class="field-stack" style="grid-column: 1 / -1">
-                  <label for="description">Descripción</label>
-                  <RichTextEditor id="description" v-model="form.description" />
-                </div>
-                <div class="field-stack">
-                  <label for="statusId">Estado</label>
-                  <select id="statusId" v-model="form.statusId">
-                    <option v-for="status in catalogs.statuses" :key="status.id" :value="status.id">{{ status.name }}</option>
-                  </select>
-                </div>
-                <div v-if="selectedStatusIsFinal" class="field-stack">
-                  <label for="resolvedAt">Fecha de solución (reportes)</label>
-                  <input id="resolvedAt" v-model="form.resolvedAt" type="date" />
-                  <p class="meta" style="margin: 0">
-                    Día en que el caso quedó resuelto. Si lo cierras hoy pero ocurrió antes, elige esa fecha; si lo dejas vacío al primer cierre, se usa la fecha de hoy.
-                  </p>
-                </div>
-                <div class="field-stack">
-                  <label for="priorityId">Prioridad</label>
-                  <select id="priorityId" v-model="form.priorityId">
-                    <option v-for="priority in catalogs.priorities" :key="priority.id" :value="priority.id">
-                      {{ priority.name }}
-                    </option>
-                  </select>
-                </div>
-                <div class="field-stack">
-                  <label for="productId">Producto</label>
-                  <select id="productId" v-model="form.productId">
-                    <option v-for="product in catalogs.products" :key="product.id" :value="product.id">{{ product.name }}</option>
-                  </select>
-                </div>
-                <div class="field-stack">
-                  <label for="ticketTypeId">Tipo</label>
-                  <select id="ticketTypeId" v-model="form.ticketTypeId">
-                    <option v-for="type in catalogs.types" :key="type.id" :value="type.id">{{ type.name }}</option>
-                  </select>
-                </div>
-                <div class="field-stack">
-                  <label for="areaId">Área solicitante</label>
-                  <select id="areaId" v-model="form.areaId">
-                    <option value="">— Sin área —</option>
-                    <option v-for="area in catalogs.areas" :key="area.id" :value="area.id">{{ area.name }}</option>
-                  </select>
-                </div>
-                <div class="field-stack">
-                  <label for="requesterName">Nombre de quien solicita</label>
-                  <input
-                    id="requesterName"
-                    v-model.trim="form.requesterName"
-                    placeholder="Nombre completo del solicitante"
-                  />
-                </div>
-                <div class="field-stack">
-                  <label for="requesterPhone">Telefono de quien solicita (opcional)</label>
-                  <input
-                    id="requesterPhone"
-                    v-model.trim="form.requesterPhone"
-                    placeholder="Ej: 3001234567"
-                  />
-                </div>
-                <div class="field-stack" style="grid-column: 1 / -1">
-                  <label for="assigneeId">Asignado a</label>
-                  <select id="assigneeId" v-model="form.assigneeId">
-                    <option value="">— Sin asignar —</option>
-                    <option v-for="user in assignableUsers" :key="user.id" :value="String(user.id)">
-                      {{ user.fullName }} ({{ user.email }})
-                    </option>
-                  </select>
-                  <p v-if="assignableUsers.length === 0" class="meta">No tienes permiso para reasignar usuarios.</p>
-                </div>
-                <div class="field-stack">
-                  <label for="subticketQuantity">Cantidad de subtickets</label>
-                  <input id="subticketQuantity" v-model.number="subticketQuantity" type="number" min="1" max="20" />
-                </div>
+            <div class="field-stack">
+              <label for="title">Resumen</label>
+              <input id="title" v-model.trim="form.title" required minlength="3" />
             </div>
-            <div class="actions-row ticket-sticky-actions">
-              <button class="btn btn-primary" type="button" :disabled="isBusy" @click="saveTicket">
-                {{ isSaving ? 'Guardando...' : 'Guardar cambios' }}
-              </button>
-              <button class="btn btn-ghost" type="button" :disabled="isBusy" @click="createSubtickets">
-                {{ isCreatingSubtickets ? 'Creando subtickets...' : 'Crear subtickets' }}
-              </button>
-              <button class="btn btn-ghost" type="button" :disabled="isBusy" @click="duplicateTicket">
-                {{ isDuplicating ? 'Duplicando...' : 'Duplicar y asignar' }}
-              </button>
+            <div class="field-stack" style="margin-top:0.75rem">
+              <label for="description">Descripción</label>
+              <RichTextEditor id="description" v-model="form.description" />
             </div>
-
-            <div v-if="showWorklogs" class="ticket-inline-form ticket-time-inline">
-              <p class="meta" style="margin: 0">
-                Estado cerrado detectado: registra tiempo aquí y se guardará con “Guardar cambios”.
-              </p>
-              <div class="grid-2">
-                <div class="field-stack">
-                  <label for="worklogAmount">Tiempo trabajado</label>
-                  <input
-                    id="worklogAmount"
-                    v-model.number="worklog.amount"
-                    type="number"
-                    min="1"
-                    :step="worklog.unit === 'minutes' ? 1 : 0.25"
-                    :max="worklog.unit === 'days' ? 30 : worklog.unit === 'hours' ? 720 : 43200"
-                  />
-                </div>
-                <div class="field-stack">
-                  <label for="worklogUnit">Unidad</label>
-                  <select id="worklogUnit" v-model="worklog.unit">
-                    <option value="days">Días</option>
-                    <option value="hours">Horas</option>
-                    <option value="minutes">Minutos</option>
-                  </select>
-                </div>
-                <div class="field-stack">
-                  <label for="worklogNote">Nota (opcional)</label>
-                  <input id="worklogNote" v-model="worklog.note" />
-                </div>
-              </div>
-            </div>
-
-            <div v-if="showWorklogs" class="comments">
-              <div v-if="(ticket.worklogs || []).length === 0" class="meta">Sin registros de tiempo aún.</div>
-              <div
-                v-for="worklog in ticket.worklogs || []"
-                :key="worklog.id || worklog.createdAt"
-                class="comment comment--elevated"
-              >
-                <span class="who">{{ worklog.author?.fullName || 'Usuario' }}</span>
-                <span class="when">{{ fmtDate(worklog.createdAt) }}</span>
-                <div class="body">
-                  {{ worklog.minutesSpent }} minutos<span v-if="worklog.note"> · {{ worklog.note }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
           </article>
 
-          <article class="panel ticket-panel ticket-comments-side">
-            <div class="panel-header">
-              <div class="page-title">
-                <h2 style="font-size: 1.05rem">Comentarios</h2>
-                <p>Actualizaciones rápidas del equipo sobre el caso.</p>
-              </div>
-            </div>
+          <article class="panel ticket-panel" style="margin-top:0.75rem">
+            <h2 style="margin:0 0 0.75rem;font-size:1rem;font-weight:600">Actividad</h2>
             <form class="ticket-inline-form comment-composer" @submit.prevent="addComment">
               <div class="field-stack">
-                <label for="body">Nuevo comentario</label>
-                <RichTextEditor
-                  id="body"
-                  v-model="commentBody"
-                  compact
-                  placeholder="Escribe una actualización..."
-                  :disabled="isBusy"
-                />
+                <RichTextEditor id="body" v-model="commentBody" compact placeholder="Añadir un comentario..." :disabled="isBusy" />
               </div>
-              <div class="actions-row" style="justify-content: space-between">
+              <div class="actions-row" style="justify-content:space-between;margin-top:0.5rem">
                 <input ref="commentFileInput" type="file" :disabled="isBusy" />
-                <button class="btn btn-ghost" type="button" :disabled="isBusy" @click="uploadAttachment">
-                  Subir archivo/foto
-                </button>
+                <button class="btn btn-ghost btn--sm" type="button" :disabled="isBusy" @click="uploadAttachment">Adjuntar</button>
               </div>
-              <button class="btn btn-primary" type="submit" :disabled="isBusy">
-                {{ isCommenting ? 'Publicando...' : 'Publicar' }}
+              <button class="btn btn-primary btn--sm" type="submit" :disabled="isBusy" style="margin-top:0.5rem">
+                {{ isCommenting ? 'Publicando...' : 'Comentar' }}
               </button>
             </form>
 
-            <div class="comment-timeline">
-              <div v-if="(ticket.comments || []).length === 0" class="meta">Sin comentarios aún.</div>
-              <div
-                v-for="comment in ticket.comments || []"
-                :key="comment.id || comment.createdAt"
-                class="timeline-item timeline-item--comment"
-              >
-                <div class="timeline-item__dot"></div>
-                <div class="timeline-item__content">
-                  <div class="timeline-item__header">
-                    <strong>{{ comment.author?.fullName || 'Usuario' }}</strong>
-                    <div class="actions-row" style="gap: 0.45rem">
-                      <span>{{ fmtDate(comment.createdAt) }}</span>
-                      <button
-                        v-if="canDeleteComment(comment)"
-                        class="btn btn-ghost"
-                        type="button"
-                        :disabled="isBusy"
-                        @click="removeComment(comment)"
-                      >
-                        {{ deletingCommentId === String(comment.id) ? 'Eliminando...' : 'Eliminar' }}
-                      </button>
-                    </div>
+            <ActivityFeed :items="activityItems" />
+
+            <div v-for="comment in ticket.comments || []" :key="`att-${comment.id}`" class="stack" style="margin-top:0.5rem">
+              <div v-if="extractAttachments(comment.body).length" class="stack">
+                <article
+                  v-for="(attachment, attIdx) in extractAttachments(comment.body)"
+                  :key="`${String(comment.id)}-${attIdx}`"
+                  class="panel"
+                  style="padding:0.6rem"
+                >
+                  <template v-if="attachment.isImage">
+                    <img
+                      v-if="resolvedImageSrc[attachmentPreviewKey(comment, attIdx)]"
+                      :src="resolvedImageSrc[attachmentPreviewKey(comment, attIdx)]"
+                      alt="Imagen adjunta"
+                      style="max-width:100%;border-radius:6px;margin-bottom:0.5rem"
+                      @error="onAttachmentImageError(comment, attIdx)"
+                    />
+                  </template>
+                  <div class="actions-row">
+                    <button type="button" class="btn btn-ghost btn--sm" @click="openStoredAttachment(attachment.storedUrl, 'tab')">Ver</button>
+                    <button type="button" class="btn btn-primary btn--sm" @click="openStoredAttachment(attachment.storedUrl, 'download')">Descargar</button>
                   </div>
-                  <RichHtmlDisplay
-                    v-if="stripUrlsForDisplay(comment.body)"
-                    class="comment-rich-body"
-                    :html="stripUrlsForDisplay(comment.body)"
-                  />
-                  <p v-else class="meta">Adjunto sin texto</p>
-                  <div v-if="extractAttachments(comment.body).length" class="stack" style="margin-top: 0.5rem">
-                    <article
-                      v-for="(attachment, attIdx) in extractAttachments(comment.body)"
-                      :key="`${String(comment.id)}-${attIdx}`"
-                      class="panel"
-                      style="padding: 0.6rem"
-                    >
-                      <template v-if="attachment.isImage">
-                        <img
-                          v-if="resolvedImageSrc[attachmentPreviewKey(comment, attIdx)]"
-                          :src="resolvedImageSrc[attachmentPreviewKey(comment, attIdx)]"
-                          alt="Imagen adjunta"
-                          style="max-width: 100%; border-radius: 10px; margin-bottom: 0.5rem"
-                          @error="onAttachmentImageError(comment, attIdx)"
-                        />
-                        <p
-                          v-else-if="resolvedImageSrc[attachmentPreviewKey(comment, attIdx)] === ''"
-                          class="meta"
-                          style="margin-bottom: 0.5rem"
-                        >
-                          No se pudo mostrar la vista previa. Usa «Ver» para abrir la imagen.
-                        </p>
-                        <p v-else class="meta" style="margin-bottom: 0.5rem">Cargando vista previa…</p>
-                      </template>
-                      <div class="actions-row" style="justify-content: space-between">
-                        <button type="button" class="btn btn-ghost" @click="openStoredAttachment(attachment.storedUrl, 'tab')">
-                          Ver
-                        </button>
-                        <button
-                          type="button"
-                          class="btn btn-primary"
-                          @click="openStoredAttachment(attachment.storedUrl, 'download')"
-                        >
-                          Descargar
-                        </button>
-                      </div>
-                    </article>
-                  </div>
-                </div>
+                </article>
               </div>
             </div>
           </article>
         </div>
 
-        <article v-if="activeWorkspaceTab === 'history'" class="panel ticket-panel">
-          <div class="panel-header">
-            <div class="page-title">
-              <h2 style="font-size: 1.05rem">Historial de movimientos</h2>
-              <p>Rastrea los cambios importantes del ticket en orden cronológico.</p>
-            </div>
+        <MetaPanel title="Detalles">
+          <div class="jira-meta-row">
+            <label for="statusId">Estado</label>
+            <select id="statusId" v-model="form.statusId">
+              <option v-for="status in catalogs.statuses" :key="status.id" :value="status.id">{{ status.name }}</option>
+            </select>
           </div>
-          <div class="timeline-list">
-            <div v-if="(ticket.events || []).length === 0" class="meta">Sin movimientos registrados aún.</div>
-            <div
-              v-for="event in ticket.events || []"
-              :key="event.id || `${event.createdAt}-${event.eventType}`"
-              class="timeline-item"
-            >
-              <div class="timeline-item__dot"></div>
-              <div class="timeline-item__content">
-                <div class="timeline-item__header">
-                  <strong>{{ event.actor?.fullName || 'Sistema' }}</strong>
-                  <span>{{ fmtDate(event.createdAt) }}</span>
-                </div>
-                <p>{{ eventText(event) }}</p>
-              </div>
-            </div>
+          <div v-if="selectedStatusIsFinal" class="jira-meta-row">
+            <label for="resolvedAt">Fecha de solución</label>
+            <input id="resolvedAt" v-model="form.resolvedAt" type="date" />
           </div>
-        </article>
-
-      </section>
+          <div class="jira-meta-row">
+            <label for="priorityId">Prioridad</label>
+            <select id="priorityId" v-model="form.priorityId">
+              <option v-for="priority in catalogs.priorities" :key="priority.id" :value="priority.id">{{ priority.name }}</option>
+            </select>
+          </div>
+          <div class="jira-meta-row">
+            <label for="assigneeId">Asignado</label>
+            <select id="assigneeId" v-model="form.assigneeId">
+              <option value="">Sin asignar</option>
+              <option v-for="user in assignableUsers" :key="user.id" :value="String(user.id)">{{ user.fullName }}</option>
+            </select>
+          </div>
+          <div class="jira-meta-row">
+            <label for="productId">Producto</label>
+            <select id="productId" v-model="form.productId">
+              <option v-for="product in catalogs.products" :key="product.id" :value="product.id">{{ product.name }}</option>
+            </select>
+          </div>
+          <div class="jira-meta-row">
+            <label for="ticketTypeId">Tipo</label>
+            <select id="ticketTypeId" v-model="form.ticketTypeId">
+              <option v-for="type in catalogs.types" :key="type.id" :value="type.id">{{ type.name }}</option>
+            </select>
+          </div>
+          <div class="jira-meta-row">
+            <label for="areaId">Área</label>
+            <select id="areaId" v-model="form.areaId">
+              <option value="">Sin área</option>
+              <option v-for="area in catalogs.areas" :key="area.id" :value="area.id">{{ area.name }}</option>
+            </select>
+          </div>
+          <div class="jira-meta-row">
+            <label for="requesterName">Solicitante</label>
+            <input id="requesterName" v-model.trim="form.requesterName" />
+          </div>
+          <div class="jira-meta-row">
+            <label for="requesterPhone">Teléfono</label>
+            <input id="requesterPhone" v-model.trim="form.requesterPhone" />
+          </div>
+          <div class="jira-meta-row">
+            <span class="meta">Creado</span>
+            <span>{{ fmtDate(ticket.createdAt) }}</span>
+          </div>
+          <div class="jira-meta-row">
+            <span class="meta">Actualizado</span>
+            <span>{{ fmtDate(ticket.updatedAt) }}</span>
+          </div>
+          <div class="jira-meta-row">
+            <span class="meta">Tiempo registrado</span>
+            <span>{{ ticket.totalLoggedMinutes || 0 }} min</span>
+          </div>
+          <div v-if="showWorklogs" class="jira-meta-row">
+            <label for="worklogAmount">Registrar tiempo</label>
+            <input id="worklogAmount" v-model.number="worklog.amount" type="number" min="1" />
+            <select id="worklogUnit" v-model="worklog.unit" style="margin-top:0.35rem">
+              <option value="minutes">Minutos</option>
+              <option value="hours">Horas</option>
+              <option value="days">Días</option>
+            </select>
+            <input id="worklogNote" v-model="worklog.note" placeholder="Nota" style="margin-top:0.35rem" />
+          </div>
+          <div class="jira-meta-row">
+            <label for="subticketQuantity">Subtickets</label>
+            <input id="subticketQuantity" v-model.number="subticketQuantity" type="number" min="1" max="20" />
+          </div>
+          <div class="actions-row" style="flex-direction:column;gap:0.35rem;margin-top:0.5rem">
+            <button class="btn btn-primary" type="button" :disabled="isBusy" @click="saveTicket">
+              {{ isSaving ? 'Guardando...' : 'Guardar' }}
+            </button>
+            <button class="btn btn-ghost btn--sm" type="button" :disabled="isBusy" @click="createSubtickets">Crear subtickets</button>
+            <button class="btn btn-ghost btn--sm" type="button" :disabled="isBusy" @click="duplicateTicket">Duplicar</button>
+          </div>
+        </MetaPanel>
+      </div>
     </template>
   </section>
 </template>
@@ -334,7 +168,10 @@ import { useUsers } from '../../../shared/composables/useUsers';
 import { useUi } from '../../../shared/composables/useUi';
 import { uploadsService } from '../../../shared/services/uploadsService';
 import { eventText, fmtDate } from '../../../shared/utils/format';
-import RichHtmlDisplay from '../../../shared/components/RichHtmlDisplay.vue';
+import IssueKeyLink from '../../../shared/components/IssueKeyLink.vue';
+import MetaPanel from '../../../shared/components/MetaPanel.vue';
+import ActivityFeed from '../../../shared/components/ActivityFeed.vue';
+import { usePageChrome } from '../../../shared/composables/usePageChrome';
 import { isRichHtmlEmpty, stripUrlsForDisplay } from '../../../shared/utils/richHtml';
 
 const RichTextEditor = defineAsyncComponent(() => import('../../../shared/components/RichTextEditor.vue'));
@@ -342,6 +179,7 @@ const RichTextEditor = defineAsyncComponent(() => import('../../../shared/compon
 const route = useRoute();
 const router = useRouter();
 const ui = useUi();
+const { setBreadcrumbCurrent, clearBreadcrumbCurrent } = usePageChrome();
 const { fetchCatalogBundle } = useCatalogs();
 const { fetchUsersList } = useUsers();
 
@@ -358,7 +196,6 @@ const isDuplicating = ref(false);
 const isCreatingSubtickets = ref(false);
 const subticketQuantity = ref(1);
 const deletingCommentId = ref('');
-const activeWorkspaceTab = ref('overview');
 const commentsLoaded = ref(false);
 const DETAIL_ACTIVITY_LIMIT = 40;
 const worklog = reactive({
@@ -413,9 +250,44 @@ const backToList = computed(() => {
 
 async function loadCommentsIfNeeded() {
   if (commentsLoaded.value) return;
-  await refreshTicketDataSoft({ includeComments: true, includeEvents: false, includeWorklogs: false });
+  await refreshTicketDataSoft({ includeComments: true, includeEvents: true, includeWorklogs: true });
   commentsLoaded.value = true;
 }
+
+const activityItems = computed(() => {
+  const items = [];
+  for (const comment of ticket.value?.comments || []) {
+    items.push({
+      id: `c-${comment.id}`,
+      type: 'comments',
+      createdAt: comment.createdAt,
+      authorName: comment.author?.fullName || 'Usuario',
+      authorEmail: comment.author?.email,
+      html: stripUrlsForDisplay(comment.body),
+      body: comment.body || 'Adjunto',
+    });
+  }
+  for (const event of ticket.value?.events || []) {
+    items.push({
+      id: `e-${event.id}`,
+      type: 'history',
+      createdAt: event.createdAt,
+      authorName: event.actor?.fullName || 'Sistema',
+      body: eventText(event),
+    });
+  }
+  for (const wl of ticket.value?.worklogs || []) {
+    items.push({
+      id: `w-${wl.id}`,
+      type: 'worklogs',
+      createdAt: wl.createdAt,
+      authorName: wl.author?.fullName || 'Usuario',
+      body: `Registró ${wl.minutesSpent} min${wl.note ? ` · ${wl.note}` : ''}`,
+      badge: 'Tiempo',
+    });
+  }
+  return items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+});
 
 async function resolveCommentImagePreviews(comments) {
   if (!comments?.length) return;
@@ -538,10 +410,6 @@ const isClosedStatus = computed(() => {
 });
 
 const showWorklogs = computed(() => isClosedStatus.value);
-const workspaceTabs = computed(() => [
-  { key: 'overview', label: 'Datos, comentarios y tiempo', count: commentsCount.value },
-  { key: 'history', label: 'Historial', count: eventsCount.value },
-]);
 const isBusy = computed(
   () =>
     isSaving.value ||
@@ -582,6 +450,8 @@ function syncForm() {
   form.requesterName = ticket.value.requesterName || '';
   form.requesterPhone = ticket.value.requesterPhone || '';
   form.assigneeId = ticket.value.assigneeId == null ? '' : String(ticket.value.assigneeId);
+  const label = ticket.value.key || form.title;
+  setBreadcrumbCurrent(label.length > 48 ? `${label.slice(0, 48)}…` : label);
 }
 
 function mergeTicketSnapshot(snapshot) {
@@ -605,7 +475,7 @@ async function refreshTicketDataSoft(options = {}) {
   const fullSnapshot = await ticketsService.get(route.params.id, {
     includeComments: options.includeComments ?? commentsLoaded.value,
     includeWorklogs: options.includeWorklogs ?? true,
-    includeEvents: options.includeEvents ?? activeWorkspaceTab.value === 'history',
+    includeEvents: options.includeEvents ?? true,
     commentsLimit: options.commentsLimit ?? DETAIL_ACTIVITY_LIMIT,
     worklogsLimit: options.worklogsLimit ?? DETAIL_ACTIVITY_LIMIT,
     eventsLimit: options.eventsLimit ?? DETAIL_ACTIVITY_LIMIT,
@@ -863,30 +733,16 @@ onMounted(loadTicket);
 watch(
   () => route.params.id,
   () => {
-    activeWorkspaceTab.value = 'overview';
+    clearBreadcrumbCurrent();
     loadTicket();
   },
 );
 
 watch(showWorklogs, (enabled) => {
-  if (!enabled && activeWorkspaceTab.value === 'overview') {
+  if (!enabled) {
     worklog.amount = null;
     worklog.unit = 'minutes';
     worklog.note = '';
   }
 });
-
-watch(
-  () => activeWorkspaceTab.value,
-  async (tab) => {
-    if (tab === 'overview') {
-      await loadCommentsIfNeeded();
-      return;
-    }
-    if (tab !== 'history') return;
-    const hasEventsLoaded = Array.isArray(ticket.value?.events) && ticket.value.events.length > 0;
-    if (hasEventsLoaded) return;
-    await refreshTicketDataSoft({ includeEvents: true });
-  },
-);
 </script>
