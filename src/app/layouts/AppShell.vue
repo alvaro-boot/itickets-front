@@ -131,7 +131,7 @@ const sections = [
     items: [
       { to: '/catalogs', label: 'Catálogos', key: 'catalogs', icon: iconCatalog },
       { to: '/admin', label: 'Administración', key: 'admin', icon: iconAdmin },
-      { to: '/reports', label: 'Reportes', key: 'reports', icon: iconReport },
+      { to: '/dashboard', label: 'Dashboard', key: 'dashboard', icon: iconReport },
     ],
   },
 ];
@@ -143,7 +143,7 @@ function canSeeItem(item) {
   if (item.key === 'admin') return profile.permissions?.includes('companies.manage');
   if (item.key === 'incidents') return profile.enabledModules?.includes('incidents');
   if (item.key === 'tasks') return profile.enabledModules?.includes('tasks');
-  if (item.key === 'reports') return profile.enabledModules?.includes('tickets');
+  if (item.key === 'dashboard') return profile.enabledModules?.includes('tickets');
   if (item.key === 'catalogs') {
     return profile.permissions?.includes('catalogs.manage') || profile.enabledModules?.includes('tickets');
   }

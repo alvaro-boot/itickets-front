@@ -117,6 +117,18 @@
               <option v-for="area in catalogs.areas" :key="area.id" :value="area.id">{{ area.name }}</option>
             </select>
           </JiraFieldRow>
+          <JiraFieldRow label="Story points">
+            <select id="storyPoints" v-model="form.storyPoints" class="jira-field-control">
+              <option value="">Sin estimar</option>
+              <option v-for="p in storyPointOptions" :key="p" :value="String(p)">{{ p }}</option>
+            </select>
+          </JiraFieldRow>
+          <JiraFieldRow label="Sprint">
+            <select id="sprintId" v-model="form.sprintId" class="jira-field-control">
+              <option value="">Backlog</option>
+              <option v-for="s in sprints" :key="s.id" :value="s.id">{{ s.name }}</option>
+            </select>
+          </JiraFieldRow>
           <JiraFieldRow label="Solicitante">
             <input id="requesterName" v-model.trim="form.requesterName" class="jira-field-control" />
           </JiraFieldRow>
@@ -186,6 +198,9 @@ import StatusLozenge from '../../../shared/components/StatusLozenge.vue';
 import JiraFieldRow from '../../../shared/components/JiraFieldRow.vue';
 import ActivityFeed from '../../../shared/components/ActivityFeed.vue';
 import { usePageChrome } from '../../../shared/composables/usePageChrome';
+import { sprintsService } from '../../sprints/services/sprintsService';
+
+const storyPointOptions = [1, 2, 3, 5, 8, 13, 21];
 import { isRichHtmlEmpty, stripUrlsForDisplay } from '../../../shared/utils/richHtml';
 
 const RichTextEditor = defineAsyncComponent(() => import('../../../shared/components/RichTextEditor.vue'));
@@ -201,6 +216,7 @@ const loading = ref(false);
 const showMoreFields = ref(false);
 const ticket = ref(null);
 const assignableUsers = ref([]);
+const sprints = ref([]);
 const commentBody = ref('');
 const commentFileInput = ref(null);
 /** URLs de vista previa por comentario+índice (clave distinta a cada GET /uploads/view-url). */
@@ -238,6 +254,8 @@ const form = reactive({
   requesterName: '',
   requesterPhone: '',
   assigneeId: '',
+  storyPoints: '',
+  sprintId: '',
 });
 
 function extractAttachments(body) {
@@ -465,6 +483,9 @@ function syncForm() {
   form.requesterName = ticket.value.requesterName || '';
   form.requesterPhone = ticket.value.requesterPhone || '';
   form.assigneeId = ticket.value.assigneeId == null ? '' : String(ticket.value.assigneeId);
+  form.storyPoints =
+    ticket.value.storyPoints == null ? '' : String(ticket.value.storyPoints);
+  form.sprintId = ticket.value.sprintId == null ? '' : String(ticket.value.sprintId);
   const label = ticket.value.key || form.title;
   setBreadcrumbCurrent(label.length > 48 ? `${label.slice(0, 48)}…` : label);
 }
@@ -506,7 +527,7 @@ async function loadTicket() {
   loading.value = true;
   commentsLoaded.value = false;
   try {
-    const [ticketRow, catalogBundle, userList] = await Promise.all([
+    const [ticketRow, catalogBundle, userList, sprintsPayload] = await Promise.all([
       ticketsService.get(route.params.id, {
         includeComments: false,
         includeWorklogs: true,
@@ -515,11 +536,13 @@ async function loadTicket() {
       }),
       fetchCatalogBundle(),
       fetchUsersList(),
+      sprintsService.list().catch(() => ({ items: [] })),
     ]);
 
     Object.keys(resolvedImageSrc).forEach((k) => delete resolvedImageSrc[k]);
     ticket.value = ticketRow;
     Object.assign(catalogs, catalogBundle);
+    sprints.value = sprintsPayload?.items || [];
 
     const usersMap = new Map((userList || []).map((user) => [String(user.id), user]));
     if (ticketRow.assigneeId && !usersMap.has(String(ticketRow.assigneeId))) {
@@ -557,6 +580,8 @@ async function saveTicket() {
       requesterName: form.requesterName || null,
       requesterPhone: form.requesterPhone || null,
       assigneeId: form.assigneeId || null,
+      storyPoints: form.storyPoints ? Number(form.storyPoints) : null,
+      sprintId: form.sprintId || null,
     };
     if (selectedStatusIsFinal.value) {
       const trimmed = String(form.resolvedAt || '').trim();
