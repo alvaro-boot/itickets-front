@@ -1,23 +1,24 @@
 <template>
-  <section class="page">
+  <section class="page page--module page--incidents">
     <header class="page__header">
-      <h1>Incidentes</h1>
+      <h1 class="page__title">Incidentes</h1>
       <p class="page__subtitle">Total {{ total }} · Abiertos {{ openCount }} · Resueltos {{ resolvedCount }}</p>
     </header>
 
-    <div class="jira-collapsible">
+    <div class="jira-collapsible jira-collapsible--card">
       <button type="button" class="jira-collapsible__toggle" @click="showCreate = !showCreate">
-        Registrar incidente <span>{{ showCreate ? '▲' : '▼' }}</span>
+        <span>Registrar incidente</span>
+        <span class="jira-collapsible__chevron" :class="{ 'is-open': showCreate }">▼</span>
       </button>
       <div v-if="showCreate" class="jira-collapsible__body">
-      <form class="grid-2" @submit.prevent="createIncident">
+      <form class="grid-2 module-form" @submit.prevent="createIncident">
         <div class="field-stack" style="grid-column: 1 / -1">
-          <label for="incidentTitle">Titulo</label>
-          <input id="incidentTitle" v-model.trim="form.title" minlength="3" required />
+          <label for="incidentTitle">Título</label>
+          <input id="incidentTitle" v-model.trim="form.title" minlength="3" required placeholder="Describe el incidente" />
         </div>
         <div class="field-stack" style="grid-column: 1 / -1">
-          <label for="incidentDescription">Descripcion</label>
-          <textarea id="incidentDescription" v-model="form.description"></textarea>
+          <label for="incidentDescription">Descripción</label>
+          <textarea id="incidentDescription" v-model="form.description" rows="3" placeholder="Detalles adicionales"></textarea>
         </div>
         <div class="field-stack">
           <label for="incidentProductId">Producto</label>
@@ -40,21 +41,29 @@
       </div>
     </div>
 
-    <div v-if="isLoading" class="panel">
+    <div v-if="isLoading" class="panel panel--muted">
       <p class="meta">Cargando incidentes...</p>
     </div>
 
-    <div class="panel">
+    <div class="panel panel--elevated">
       <div class="panel-header">
-        <h3 style="margin: 0; font-size: 1rem">Listado</h3>
+        <h3 class="panel-header__title">Listado</h3>
       </div>
       <DataTable variant="jira" :rows="incidentRows" :columns="incidentColumns" row-key="id" empty-text="Sin incidentes" :initial-page-size="25">
         <template #cell-status="{ row }">
-          <select :value="row.status" :disabled="updatingId === row.id" @change="updateStatus(row.id, $event.target.value)">
-            <option value="OPEN">OPEN</option>
-            <option value="IN_PROGRESS">IN_PROGRESS</option>
-            <option value="RESOLVED">RESOLVED</option>
-          </select>
+          <div class="cell-status-edit">
+            <StatusLozenge :label="statusLabel(row.status)" :code="row.status" />
+            <select
+              class="status-select"
+              :value="row.status"
+              :disabled="updatingId === row.id"
+              @change="updateStatus(row.id, $event.target.value)"
+            >
+              <option value="OPEN">Abierto</option>
+              <option value="IN_PROGRESS">En progreso</option>
+              <option value="RESOLVED">Resuelto</option>
+            </select>
+          </div>
         </template>
         <template #cell-updatedAt="{ row }">
           <span class="meta">{{ fmtDate(row.updatedAt) }}</span>
@@ -78,6 +87,7 @@ import { useCatalogs } from '../../../shared/composables/useCatalogs';
 import { useUi } from '../../../shared/composables/useUi';
 import { fmtDate } from '../../../shared/utils/format';
 import DataTable from '../../../shared/components/DataTable.vue';
+import StatusLozenge from '../../../shared/components/StatusLozenge.vue';
 
 const ui = useUi();
 const { fetchCatalogBundle } = useCatalogs();
@@ -102,13 +112,19 @@ const form = reactive({
 });
 
 const incidentColumns = [
-  { key: 'title', label: 'Titulo' },
+  { key: 'title', label: 'Título' },
   { key: 'productName', label: 'Producto' },
   { key: 'typeName', label: 'Tipo' },
   { key: 'status', label: 'Estado' },
   { key: 'createdByName', label: 'Creado por' },
   { key: 'updatedAt', label: 'Actualizado' },
 ];
+
+function statusLabel(status) {
+  if (status === 'IN_PROGRESS') return 'En progreso';
+  if (status === 'RESOLVED') return 'Resuelto';
+  return 'Abierto';
+}
 
 const incidentRows = computed(() =>
   (rows.value || []).map((incident) => ({

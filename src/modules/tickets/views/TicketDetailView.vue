@@ -11,13 +11,19 @@
       <div class="issue-layout">
         <div class="issue-main">
           <header class="issue-header">
-            <RouterLink class="issue-header__back" :to="backToList">← Tickets</RouterLink>
+            <RouterLink class="issue-header__back" :to="backToList">← Volver a tickets</RouterLink>
             <div class="issue-header__key-row">
               <IssueKeyLink :ticket="ticket" />
               <StatusLozenge
                 v-if="ticket.status?.name"
                 :label="ticket.status.name"
                 :code="ticket.status.code"
+              />
+              <StatusLozenge
+                v-if="ticket.priority?.name"
+                :label="ticket.priority.name"
+                :code="ticket.priority.code"
+                kind="priority"
               />
             </div>
             <input

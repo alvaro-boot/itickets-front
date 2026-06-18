@@ -1,9 +1,12 @@
 <template>
   <Teleport to="body">
     <div v-if="open" class="jira-modal-backdrop" @click.self="close">
-      <div class="jira-modal" role="dialog" aria-labelledby="create-issue-title" aria-modal="true">
+      <div class="jira-modal jira-modal--nexus" role="dialog" aria-labelledby="create-issue-title" aria-modal="true">
         <header class="jira-modal__header">
-          <h2 id="create-issue-title">Crear ticket</h2>
+          <div>
+            <h2 id="create-issue-title">Nuevo ticket</h2>
+            <p class="jira-modal__subtitle">Completa los campos para crear un ticket en el equipo</p>
+          </div>
           <button type="button" class="jira-modal__close" aria-label="Cerrar" @click="close">×</button>
         </header>
 

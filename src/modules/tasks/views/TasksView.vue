@@ -1,27 +1,28 @@
 <template>
-  <section class="page">
+  <section class="page page--module page--tasks">
     <header class="page__header">
-      <h1>Mis tareas</h1>
+      <h1 class="page__title">Mis tareas</h1>
       <p class="page__subtitle">Total {{ total }} · Pendientes {{ pendingCount }} · Hechas {{ doneCount }}</p>
     </header>
 
-    <div class="jira-collapsible">
+    <div class="jira-collapsible jira-collapsible--card">
       <button type="button" class="jira-collapsible__toggle" @click="showCreate = !showCreate">
-        Nueva tarea <span>{{ showCreate ? '▲' : '▼' }}</span>
+        <span>Nueva tarea</span>
+        <span class="jira-collapsible__chevron" :class="{ 'is-open': showCreate }">▼</span>
       </button>
       <div v-if="showCreate" class="jira-collapsible__body">
-      <form class="grid-2" @submit.prevent="createTask">
+      <form class="grid-2 module-form" @submit.prevent="createTask">
         <div class="field-stack" style="grid-column: 1 / -1">
-          <label for="taskTitle">Titulo</label>
-          <input id="taskTitle" v-model.trim="form.title" minlength="3" required />
+          <label for="taskTitle">Título</label>
+          <input id="taskTitle" v-model.trim="form.title" minlength="3" required placeholder="¿Qué vas a hacer?" />
         </div>
         <div class="field-stack">
           <label for="taskDate">Fecha</label>
           <input id="taskDate" v-model="form.workDate" type="date" required />
         </div>
         <div class="field-stack">
-          <label for="taskDescription">Descripcion</label>
-          <input id="taskDescription" v-model="form.description" />
+          <label for="taskDescription">Descripción</label>
+          <input id="taskDescription" v-model="form.description" placeholder="Opcional" />
         </div>
         <div style="grid-column: 1 / -1">
           <button class="btn btn-primary" type="submit" :disabled="isSubmitting || isLoading">
@@ -32,14 +33,23 @@
       </div>
     </div>
 
-    <div v-if="isLoading" class="panel">
+    <div v-if="isLoading" class="panel panel--muted">
       <p class="meta">Cargando tareas...</p>
     </div>
 
-    <div class="panel">
+    <div class="panel panel--elevated">
       <DataTable variant="jira" :rows="taskRows" :columns="taskColumns" row-key="id" empty-text="No tienes tareas registradas" :initial-page-size="25">
+        <template #cell-statusLabel="{ row }">
+          <StatusLozenge :label="row.statusLabel" :code="row.isDone ? 'CLOSED' : 'OPEN'" />
+        </template>
         <template #cell-actionLabel="{ row }">
-          <button class="btn btn-ghost" type="button" :disabled="togglingId === row.id" @click="toggleTask(row)">
+          <button
+            class="btn btn--sm"
+            :class="row.isDone ? 'btn-ghost' : 'btn-primary'"
+            type="button"
+            :disabled="togglingId === row.id"
+            @click="toggleTask(row)"
+          >
             {{ togglingId === row.id ? 'Actualizando...' : row.actionLabel }}
           </button>
         </template>
@@ -60,6 +70,7 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { tasksService } from '../services/tasksService';
 import { useUi } from '../../../shared/composables/useUi';
 import DataTable from '../../../shared/components/DataTable.vue';
+import StatusLozenge from '../../../shared/components/StatusLozenge.vue';
 
 const ui = useUi();
 const rows = ref([]);
@@ -77,10 +88,10 @@ const form = reactive({
 });
 
 const taskColumns = [
-  { key: 'title', label: 'Titulo' },
+  { key: 'title', label: 'Título' },
   { key: 'workDate', label: 'Fecha' },
   { key: 'statusLabel', label: 'Estado' },
-  { key: 'actionLabel', label: 'Accion' },
+  { key: 'actionLabel', label: 'Acción' },
 ];
 
 const taskRows = computed(() =>

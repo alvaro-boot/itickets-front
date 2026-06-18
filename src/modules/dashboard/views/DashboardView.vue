@@ -2,7 +2,7 @@
   <section class="page page--dashboard">
     <header class="page__header page__header--row">
       <div>
-        <h1>Dashboard Scrum</h1>
+        <h1 class="page__title">Dashboard Scrum</h1>
         <p class="page__subtitle">{{ monthLabel }} · Métricas del equipo</p>
       </div>
       <div class="month-picker">
@@ -16,30 +16,16 @@
 
     <template v-else-if="data">
       <div class="kpi-grid">
-        <article class="kpi-card">
-          <p class="kpi-card__label">Creados</p>
-          <p class="kpi-card__value">{{ data.summary.created }}</p>
-        </article>
-        <article class="kpi-card">
-          <p class="kpi-card__label">Completados</p>
-          <p class="kpi-card__value">{{ data.summary.completed }}</p>
-        </article>
-        <article class="kpi-card">
-          <p class="kpi-card__label">Puntos completados</p>
-          <p class="kpi-card__value">{{ data.summary.completedStoryPoints }}</p>
-        </article>
-        <article class="kpi-card">
-          <p class="kpi-card__label">Backlog</p>
-          <p class="kpi-card__value">{{ data.summary.backlog }}</p>
-        </article>
-        <article class="kpi-card">
-          <p class="kpi-card__label">En progreso</p>
-          <p class="kpi-card__value">{{ data.summary.inProgress }}</p>
-        </article>
-        <article class="kpi-card">
-          <p class="kpi-card__label">Velocity prom.</p>
-          <p class="kpi-card__value">{{ data.velocity?.averageVelocity || 0 }}</p>
-        </article>
+        <NexusMetricCard label="Creados" :value="data.summary.created" />
+        <NexusMetricCard label="Completados" :value="data.summary.completed" trend="up" />
+        <NexusMetricCard label="Puntos completados" :value="data.summary.completedStoryPoints" />
+        <NexusMetricCard label="Backlog" :value="data.summary.backlog" />
+        <NexusMetricCard label="En progreso" :value="data.summary.inProgress" />
+        <NexusMetricCard
+          label="Velocity prom."
+          :value="data.velocity?.averageVelocity || 0"
+          :delta="velocityRows.length ? `${velocityRows.length} sprints` : ''"
+        />
       </div>
 
       <div class="dashboard-grid">
@@ -181,6 +167,7 @@ import { dashboardService } from '../services/dashboardService';
 import { sprintsService } from '../../sprints/services/sprintsService';
 import { useUi } from '../../../shared/composables/useUi';
 import StatusLozenge from '../../../shared/components/StatusLozenge.vue';
+import NexusMetricCard from '../../../nexus/components/NexusMetricCard.vue';
 
 const ui = useUi();
 const loading = ref(false);

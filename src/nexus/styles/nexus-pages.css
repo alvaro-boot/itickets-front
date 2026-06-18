@@ -1,0 +1,567 @@
+/* Nexus — páginas de detalle y dashboard */
+
+.page--issue,
+.page--dashboard {
+  max-width: 1280px;
+  padding: 1.5rem 1.75rem 2.5rem;
+}
+
+.nexus-shell .page--issue,
+.nexus-shell .page--dashboard {
+  padding: 0;
+  max-width: none;
+}
+
+/* ── Detalle de ticket ── */
+
+.issue-layout {
+  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr) 280px;
+}
+
+.issue-main {
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem 1.75rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.issue-header {
+  margin-bottom: 1.75rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.issue-header__back {
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+}
+
+.issue-header__summary {
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+  padding: 0.35rem 0.5rem;
+  margin: 0 -0.5rem;
+  border-radius: 8px;
+  transition: background 160ms ease;
+}
+
+.issue-header__summary:hover {
+  background: #f8fafc;
+}
+
+.issue-header__summary:focus {
+  background: #f8fafc;
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.issue-section__title {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.75rem;
+}
+
+.issue-comment-form {
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.issue-sidebar {
+  top: calc(var(--topbar-height, 52px) + 1rem);
+  padding: 1.1rem 1.15rem;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.jira-field-row {
+  grid-template-columns: 100px 1fr;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f8fafc;
+}
+
+.jira-field-row:last-of-type {
+  border-bottom: none;
+}
+
+.jira-field-row__label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding-top: 0.5rem;
+}
+
+.jira-field-control {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 0.45rem 0.6rem;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.jira-field-control:hover {
+  border-color: var(--border-strong);
+  background: var(--surface);
+}
+
+.jira-field-control:focus {
+  border-color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+  outline: none;
+}
+
+.issue-sidebar__actions .btn-primary {
+  border-radius: 8px;
+  padding: 0.55rem 1rem;
+}
+
+.issue-sidebar__more {
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  font-weight: 500;
+}
+
+.issue-sidebar__more:hover {
+  background: #f8fafc;
+}
+
+.issue-sidebar__extras {
+  border-top: 1px solid var(--border);
+  padding-top: 0.5rem;
+}
+
+.issue-sidebar__extras summary {
+  font-weight: 500;
+}
+
+.issue-attachment {
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+/* Actividad */
+.jira-activity-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 4px;
+  margin-bottom: 1rem;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 10px;
+}
+
+.jira-activity-tab {
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  border-bottom: none;
+  font-size: 0.8125rem;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.jira-activity-tab.active {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.jira-activity-item {
+  padding: 1rem 0;
+  gap: 0.75rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.jira-activity-item:last-child {
+  border-bottom: none;
+}
+
+.jira-activity-item__body {
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.ticket-loading-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.8125rem;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 999px;
+}
+
+/* ── Dashboard ── */
+
+.page--dashboard .page__header h1,
+.page--dashboard .page__title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.kpi-grid .nx-metric {
+  transition: box-shadow 160ms ease, transform 160ms ease;
+}
+
+.kpi-grid .nx-metric:hover {
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+.dashboard-grid {
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.dash-panel {
+  border-radius: 12px;
+  padding: 1.25rem 1.35rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.dash-panel__title {
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+}
+
+.month-picker {
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 4px;
+}
+
+.month-picker__input {
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.month-picker .btn-ghost {
+  border-radius: 8px;
+}
+
+.chart-track {
+  background: #f1f5f9;
+  border: none;
+  height: 10px;
+}
+
+.chart-track span {
+  background: linear-gradient(90deg, #2563eb, #3b82f6);
+  border-radius: 999px;
+}
+
+.chart-bar--created {
+  background: #8b5cf6;
+}
+
+.chart-bar--done {
+  background: #22c55e;
+}
+
+.legend-dot--created {
+  background: #8b5cf6;
+}
+
+.legend-dot--done {
+  background: #22c55e;
+}
+
+.burndown-bar--actual {
+  background: linear-gradient(180deg, #2563eb, #60a5fa);
+  border-radius: 6px 6px 0 0;
+}
+
+.burndown-chart {
+  min-height: 160px;
+  padding: 0.75rem 0.25rem 0;
+}
+
+.sprint-admin {
+  border-radius: 12px;
+}
+
+.sprint-form {
+  padding: 1rem;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sprint-row {
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sprint-row:last-child {
+  border-bottom: 1px solid var(--border);
+}
+
+.sprint-row__actions .btn-ghost {
+  border-radius: 8px;
+}
+
+/* ── Módulos: incidentes y tareas ── */
+
+.page--module {
+  max-width: 1280px;
+  padding: 1.5rem 1.75rem 2.5rem;
+}
+
+.nexus-shell .page--module {
+  padding: 0;
+  max-width: none;
+}
+
+.panel--elevated {
+  border-radius: 12px !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06) !important;
+  padding: 1.25rem 1.35rem !important;
+  margin-top: 1rem;
+}
+
+.panel--muted {
+  border-radius: 12px !important;
+  background: #f8fafc !important;
+  margin-bottom: 1rem;
+}
+
+.panel-header {
+  margin-bottom: 1rem;
+}
+
+.panel-header__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.jira-collapsible--card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  margin-bottom: 1rem;
+  background: var(--surface);
+}
+
+.jira-collapsible__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+
+.jira-collapsible__toggle:hover {
+  background: #f8fafc !important;
+}
+
+.jira-collapsible__chevron {
+  font-size: 0.7rem;
+  color: var(--muted);
+  transition: transform 160ms ease;
+}
+
+.jira-collapsible__chevron.is-open {
+  transform: rotate(180deg);
+}
+
+.jira-collapsible__body {
+  padding: 1.25rem 1.35rem;
+  border-top: 1px solid var(--border);
+  background: #f8fafc;
+}
+
+.module-form input,
+.module-form textarea,
+.module-form select {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  background: var(--surface);
+  font-size: 0.875rem;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.module-form input:focus,
+.module-form textarea:focus,
+.module-form select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.cell-status-edit {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.status-select {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text-secondary);
+}
+
+.datatable--jira .table-wrap {
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+  box-shadow: none !important;
+}
+
+.datatable--jira th {
+  background: #f8fafc !important;
+  padding: 0.75rem 1rem !important;
+}
+
+.datatable--jira td {
+  padding: 0.8rem 1rem !important;
+  vertical-align: middle;
+}
+
+.datatable--jira tbody tr:hover td {
+  background: #f8fafc;
+}
+
+.datatable__toolbar {
+  margin-bottom: 0.85rem;
+}
+
+/* ── Modal crear ticket ── */
+
+.jira-modal-backdrop {
+  background: rgba(15, 23, 42, 0.45) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  align-items: center !important;
+  padding: 1.5rem 1rem !important;
+}
+
+.jira-modal--nexus,
+.jira-modal {
+  border-radius: 14px !important;
+  border: 1px solid var(--border);
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.16) !important;
+  overflow: hidden;
+}
+
+.jira-modal__header {
+  padding: 1.25rem 1.5rem !important;
+  background: var(--surface);
+}
+
+.jira-modal__header h2 {
+  font-size: 1.25rem !important;
+  letter-spacing: -0.02em;
+}
+
+.jira-modal__subtitle {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.jira-modal__close {
+  border-radius: 8px !important;
+  flex-shrink: 0;
+}
+
+.jira-modal__main {
+  padding: 1.5rem !important;
+  background: var(--surface);
+}
+
+.jira-modal__sidebar {
+  padding: 1.15rem !important;
+  background: #f8fafc !important;
+  border-left: 1px solid var(--border);
+}
+
+.jira-modal__footer {
+  padding: 1rem 1.5rem !important;
+  background: #f8fafc;
+}
+
+.jira-modal__footer .btn-primary {
+  border-radius: 8px;
+  min-width: 100px;
+}
+
+.jira-issue-summary-input {
+  padding: 0.5rem 0.65rem !important;
+  margin: 0 -0.65rem;
+  border-radius: 8px;
+  transition: background 160ms ease, box-shadow 160ms ease;
+}
+
+.jira-issue-summary-input:focus {
+  background: #f8fafc;
+  box-shadow: 0 0 0 3px var(--accent-ring) !important;
+}
+
+@media (max-width: 900px) {
+  .issue-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .issue-sidebar {
+    position: static;
+  }
+
+  .page--issue,
+  .page--dashboard {
+    padding: 1rem 1rem 2rem;
+  }
+
+  .issue-main {
+    padding: 1.25rem 1rem;
+  }
+
+  .page--module {
+    padding: 1rem 1rem 2rem;
+  }
+
+  .jira-modal__body {
+    grid-template-columns: 1fr !important;
+  }
+
+  .jira-modal__main {
+    border-right: none !important;
+    border-bottom: 1px solid var(--border);
+  }
+}
