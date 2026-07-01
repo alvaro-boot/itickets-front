@@ -11,7 +11,7 @@
     <title>Nexus Desk</title>
     <script>
       const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-      window.__TICKETS_API_BASE__ = window.__TICKETS_API_BASE__ || (isLocal ? 'http://localhost:3000' : 'https://itickets-ru1k.vercel.app');
+      window.__TICKETS_API_BASE__ = window.__TICKETS_API_BASE__ || (isLocal ? 'http://localhost:3000' : 'https://itickets-ru1k.vercel.app' || 'https://itickets-mu.vercel.app');
     </script>
   </head>
   <body>
